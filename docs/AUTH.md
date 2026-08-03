@@ -45,7 +45,7 @@ Supabase Dashboard 的 Authentication > SMTP Settings 接受任何标准 SMTP �
 
 ## Resend
 
-建议在 Resend 验证专用发送子域 `fenjue-mail.akko.space`，发件地址使用 `noreply@fenjue-mail.akko.space`。邮件子域与网站、R2 图片域名隔离，后续更换邮件服务时不会影响主域名。
+Resend 使用已验证的根域 `akko.space`，发件地址使用简短的 `noreply@akko.space`。发送所需的 SPF、DKIM 与 MX 记录由 Resend 生成并托管在对应的 `send` 和 `_domainkey` 子域，不替换根域现有的收件 MX 配置。
 
 | Supabase 字段 | Resend 值 |
 |---|---|
@@ -54,13 +54,13 @@ Supabase Dashboard 的 Authentication > SMTP Settings 接受任何标准 SMTP �
 | Username | `resend` |
 | Password | Resend API Key，格式为 `re_...` |
 | Sender name | `焚诀` |
-| Sender email | `noreply@fenjue-mail.akko.space` |
+| Sender email | `noreply@akko.space` |
 
 Resend API Key 不应发送到聊天、写入源码或截图保存。若使用其他 SMTP 服务商，只替换上表字段，应用代码无需修改。
 
 ### 配置顺序
 
-1. 在 Resend 的 Domains 中添加 `fenjue-mail.akko.space`，把页面给出的 SPF/DKIM DNS 记录添加到域名解析并等待状态变为 Verified。
+1. 在 Resend 的 Domains 中添加 `akko.space`，把页面给出的 SPF/DKIM/MX DNS 记录添加到域名解析并等待状态变为 Verified。
 2. 在 Resend 创建仅用于焚诀发信的 API Key；不要复用其他项目的 Key。
 3. 在 Supabase 的 Authentication > SMTP Settings 启用 Custom SMTP，按上表填写并保存。
 4. 在 Supabase 的 Authentication > Email Templates 中配置确认注册和重置密码模板。
