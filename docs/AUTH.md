@@ -24,7 +24,7 @@ R2_PUBLIC_BASE_URL=https://fenjue-images.akko.space
 5. Site URL 设置为正式站点地址。
 6. Redirect URLs 添加 `http://localhost:3000/**` 和正式站点的 `/**`。
 
-注册和密码重置均回到 `/auth/callback`，应用只接受站内 `next` 路径，防止开放重定向。
+注册和密码重置邮件均携带一次性 `token_hash` 回到 `/auth/callback`，由服务端调用 `verifyOtp` 建立会话；确认链接不依赖注册时浏览器中的 PKCE Cookie，并且只接受站内 `next` 路径，防止开放重定向。回调继续兼容使用 `code` 的 OAuth/PKCE 流程。
 
 应用中的密码登录不是 passwordless：注册使用邮箱和密码，登录校验同一密码；确认邮件只用于证明邮箱归属，不代替密码。密码及其哈希均由 Supabase Auth 托管，不进入 `public.profiles`。
 
@@ -73,7 +73,7 @@ SMTP 是部署外配置，因此仓库不会假装它已经生效。上线验收
 - 邮箱确认：`supabase/templates/confirmation.html`
 - 密码重置：`supabase/templates/recovery.html`
 
-将模板内容分别粘贴到 Supabase 的 Confirm signup 和 Reset password 邮件模板。模板保留 `{{ .ConfirmationURL }}`，由 Supabase 生成一次性安全链接。
+将模板内容分别粘贴到 Supabase 的 Confirm signup 和 Reset password 邮件模板。模板必须保留 `{{ .SiteURL }}` 与 `{{ .TokenHash }}`，由应用服务端验证一次性令牌；不要改回依赖原浏览器 PKCE Cookie 的 `{{ .ConfirmationURL }}`。
 
 建议邮件主题分别使用：
 

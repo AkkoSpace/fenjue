@@ -11,18 +11,25 @@ function safeNext(path: string | null) {
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
+  const tokenHash = url.searchParams.get("token_hash");
+  const type = url.searchParams.get("type");
   const next = safeNext(url.searchParams.get("next"));
 
-  if (code && hasSupabasePublicConfig()) {
+  if (hasSupabasePublicConfig()) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const result =
+      tokenHash && (type === "signup" || type === "recovery")
+        ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+        : code
+          ? await supabase.auth.exchangeCodeForSession(code)
+          : undefined;
 
-    if (!error) {
+    if (result && !result.error) {
       return NextResponse.redirect(new URL(next, url.origin));
     }
   }
 
-  const target = new URL("/login", url.origin);
+  const target = new URL(type === "recovery" ? "/forgot-password" : "/login", url.origin);
   target.searchParams.set("error", "验证链接无效或已经过期。");
   return NextResponse.redirect(target);
 }
