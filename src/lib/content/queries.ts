@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import { cacheLife, cacheTag } from "next/cache";
 
 import { seedPrompts } from "@/content/prompts";
 import type { PromptEntryData, PromptImage } from "@/lib/content/types";
@@ -44,18 +45,22 @@ function hasRemoteContentConfig() {
 }
 
 export async function getPrompts(): Promise<PromptEntryData[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("prompts");
+
   if (!hasRemoteContentConfig()) {
     return seedPrompts;
   }
 
   const { publishableKey, url } = getSupabasePublicConfig();
   const supabase = createClient(url, publishableKey, {
-      auth: {
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        persistSession: false,
-      },
-    });
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
+    },
+  });
 
   const { data, error } = await supabase
     .from("prompts")
