@@ -1,5 +1,6 @@
 "use server";
 
+import { isAuthWeakPasswordError } from "@supabase/supabase-js";
 import type { Route } from "next";
 import { redirect } from "next/navigation";
 
@@ -45,6 +46,39 @@ function passwordError(password: string) {
   }
 }
 
+export interface SignUpState {
+  field?: "displayName" | "email" | "password" | "form";
+  messages?: string[];
+}
+
+function signUpError(
+  field: NonNullable<SignUpState["field"]>,
+  ...messages: string[]
+): SignUpState {
+  return { field, messages };
+}
+
+function weakPasswordMessages(error: unknown) {
+  if (!isAuthWeakPasswordError(error)) {
+    return ["密码不符合当前安全要求，请更换后重试。"];
+  }
+
+  const messages = error.reasons.flatMap((reason) => {
+    switch (reason) {
+      case "length":
+        return [`密码长度不足，请至少使用 ${MIN_PASSWORD_LENGTH} 个字符。`];
+      case "characters":
+        return ["密码的字符组合不符合要求，请混合使用字母、数字或符号。"];
+      case "pwned":
+        return ["该密码已出现在公开泄露记录中，请更换一个未在其他网站使用过的密码。"];
+    }
+  });
+
+  return messages.length > 0
+    ? messages
+    : ["密码不符合当前安全要求，请更换后重试。"];
+}
+
 export async function signIn(formData: FormData) {
   if (!hasSupabasePublicConfig()) {
     configurationError("/login");
@@ -73,9 +107,12 @@ export async function signIn(formData: FormData) {
   redirect(next);
 }
 
-export async function signUp(formData: FormData) {
+export async function signUp(
+  _previousState: SignUpState,
+  formData: FormData,
+): Promise<SignUpState> {
   if (!hasSupabasePublicConfig()) {
-    configurationError("/register");
+    return signUpError("form", "认证服务尚未完成配置，请稍后再试。");
   }
 
   const displayName = value(formData, "displayName");
@@ -84,20 +121,20 @@ export async function signUp(formData: FormData) {
   const confirmation = rawValue(formData, "passwordConfirmation");
 
   if (!isEmail(email)) {
-    redirect(authUrl("/register", "error", "请输入有效邮箱。"));
+    return signUpError("email", "请输入有效邮箱。");
   }
 
   if (displayName.length > 50) {
-    redirect(authUrl("/register", "error", "昵称不能超过 50 个字符。"));
+    return signUpError("displayName", "昵称不能超过 50 个字符。");
   }
 
   const validationError = passwordError(password);
   if (validationError) {
-    redirect(authUrl("/register", "error", validationError));
+    return signUpError("password", validationError);
   }
 
   if (password !== confirmation) {
-    redirect(authUrl("/register", "error", "两次输入的密码不一致。"));
+    return signUpError("password", "两次输入的密码不一致。");
   }
 
   const supabase = await createClient();
@@ -111,11 +148,19 @@ export async function signUp(formData: FormData) {
   });
 
   if (error) {
-    const message =
-      error.code === "weak_password"
-        ? "该密码不符合安全要求，请换一个更长且不常见的密码。"
-        : "注册暂未完成，请稍后重试。";
-    redirect(authUrl("/register", "error", message));
+    if (error.code === "weak_password") {
+      return signUpError("password", ...weakPasswordMessages(error));
+    }
+
+    if (error.code === "over_email_send_rate_limit") {
+      return signUpError("form", "验证邮件发送过于频繁，请稍后再试。");
+    }
+
+    if (error.code === "email_address_invalid") {
+      return signUpError("email", "该邮箱地址无法用于注册，请检查后重试。");
+    }
+
+    return signUpError("form", "注册暂未完成，请稍后重试。");
   }
 
   redirect(

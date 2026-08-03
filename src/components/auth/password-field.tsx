@@ -1,22 +1,30 @@
 "use client";
 
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { type ChangeEventHandler, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 
 interface PasswordFieldProps {
+  "aria-describedby"?: string;
+  "aria-invalid"?: boolean;
   autoComplete: "current-password" | "new-password";
   id: string;
   label: string;
   name: string;
+  onChange?: ChangeEventHandler<HTMLInputElement>;
+  value?: string;
 }
 
 export function PasswordField({
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
   autoComplete,
   id,
   label,
   name,
+  onChange,
+  value,
 }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
 
@@ -27,14 +35,18 @@ export function PasswordField({
       </label>
       <div className="relative">
         <Input
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
           autoComplete={autoComplete}
           className="pr-11"
           id={id}
           maxLength={128}
           minLength={10}
           name={name}
+          onChange={onChange}
           required
           type={visible ? "text" : "password"}
+          value={value}
         />
         <button
           type="button"
