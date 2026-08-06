@@ -10,10 +10,12 @@ export const config = {
   matcher: [
     "/account/:path*",
     "/admin/:path*",
+    "/api/uploads/:path*",
     "/auth/:path*",
     "/login",
     "/register",
     "/forgot-password",
     "/reset-password",
+    "/submit/:path*",
   ],
 };
