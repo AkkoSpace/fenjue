@@ -1,4 +1,5 @@
-import { GitFork, UserRound } from "lucide-react";
+import { GitFork, Upload, UserRound } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 
 export function SiteHeader() {
@@ -19,6 +20,14 @@ export function SiteHeader() {
           <span className="hidden sm:inline">卷一 · 文生图</span>
           <Link
             className="inline-flex min-h-11 items-center gap-2 border-l border-border/80 pl-4 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+            href={"/submit" as Route}
+          >
+            <Upload className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">上传</span>
+            <span className="sr-only sm:hidden">上传作品</span>
+          </Link>
+          <Link
+            className="inline-flex min-h-11 items-center gap-2 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
             href="/account"
           >
             <UserRound className="size-4" aria-hidden="true" />
