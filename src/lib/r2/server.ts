@@ -1,6 +1,10 @@
 import "server-only";
 
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectsCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { IMAGE_TYPES, type SupportedImageType } from "@/lib/uploads/constraints";
@@ -28,6 +32,15 @@ function getR2Config(): R2Config {
   }
 
   return { accountId, accessKeyId, bucketName, secretAccessKey };
+}
+
+export function hasR2WriteConfig() {
+  return Boolean(
+    process.env.R2_ACCOUNT_ID &&
+      process.env.R2_ACCESS_KEY_ID &&
+      process.env.R2_SECRET_ACCESS_KEY &&
+      process.env.R2_BUCKET_NAME,
+  );
 }
 
 function getR2Client(config: R2Config) {
@@ -70,3 +83,19 @@ export async function createImageUploadUrl(
   };
 }
 
+export async function deleteImageObjects(objectKeys: string[]) {
+  if (!objectKeys.length) {
+    return;
+  }
+
+  const config = getR2Config();
+  const command = new DeleteObjectsCommand({
+    Bucket: config.bucketName,
+    Delete: {
+      Objects: objectKeys.map((Key) => ({ Key })),
+      Quiet: true,
+    },
+  });
+
+  await getR2Client(config).send(command);
+}

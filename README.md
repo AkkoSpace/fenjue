@@ -8,7 +8,7 @@
 - Tailwind CSS 4 + shadcn/ui 4 + Lucide
 - Supabase PostgreSQL 保存内容元数据与 R2 object key
 - Supabase Auth 提供邮箱密码、邮箱验证和密码重置；访客浏览无需登录
-- 登录用户通过统一的 `/submit` 页面上传作品；管理员只额外拥有全站内容管理权限
+- 登录用户通过统一的 `/submit` 页面上传作品；管理员通过 `/admin` 搜索、上下架和删除全站作品
 - Cloudflare R2 保存生产图片，Vercel 部署
 - 首批 3 条纯文生图案例，当前提供本地 seed fallback 以便开发
 - 首页仅用于浏览作品，独立详情页提供提示词复制、作者和来源
@@ -25,6 +25,7 @@ npm run dev
 
 认证、通用 SMTP、Resend 和邮件模板配置见 [`docs/AUTH.md`](docs/AUTH.md)。
 作品上传、R2 服务端凭据、CORS 和 Supabase 迁移见 [`docs/UPLOADS.md`](docs/UPLOADS.md)。
+管理员授权、内容管理和永久删除边界见 [`docs/ADMIN.md`](docs/ADMIN.md)。
 
 ## 校验
 

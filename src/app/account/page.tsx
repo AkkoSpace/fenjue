@@ -1,14 +1,16 @@
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import type { Metadata, Route } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { AuthShell, AuthShellFallback } from "@/components/auth/auth-shell";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { signOut } from "@/lib/auth/actions";
 import { type AuthPageProps, getAuthPageState } from "@/lib/auth/page";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "账户 · 焚诀",
@@ -72,7 +74,20 @@ async function AccountContent({ searchParams }: AuthPageProps) {
         </div>
       </dl>
 
-      <form action={signOut} className="mt-6">
+      {profile?.role === "admin" ? (
+        <Link
+          className={cn(
+            buttonVariants({ size: "lg" }),
+            "mt-6 min-h-11 w-full rounded-sm",
+          )}
+          href={"/admin" as Route}
+        >
+          <ShieldCheck aria-hidden="true" />
+          进入内容管理
+        </Link>
+      ) : null}
+
+      <form action={signOut} className={profile?.role === "admin" ? "mt-3" : "mt-6"}>
         <Button
           className="min-h-11 w-full rounded-sm"
           size="lg"
