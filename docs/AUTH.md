@@ -26,6 +26,8 @@ R2_PUBLIC_BASE_URL=https://fenjue-images.akko.space
 
 注册和密码重置邮件均携带一次性 `token_hash` 回到 `/auth/callback`，由服务端调用 `verifyOtp` 建立会话；确认链接不依赖注册时浏览器中的 PKCE Cookie，并且只接受站内 `next` 路径，防止开放重定向。回调继续兼容使用 `code` 的 OAuth/PKCE 流程。
 
+登录页提供重新发送注册确认邮件的入口。接口对不存在、已确认和发送失败的邮箱返回相同的提示，避免暴露邮箱注册状态；Resend 或 Supabase 的发送频率限制仍然生效。
+
 应用中的密码登录不是 passwordless：注册使用邮箱和密码，登录校验同一密码；确认邮件只用于证明邮箱归属，不代替密码。密码及其哈希均由 Supabase Auth 托管，不进入 `public.profiles`。
 
 ## 通用 SMTP

@@ -107,6 +107,32 @@ export async function signIn(formData: FormData) {
   redirect(next);
 }
 
+export async function resendConfirmation(formData: FormData) {
+  if (!hasSupabasePublicConfig()) {
+    configurationError("/login");
+  }
+
+  const email = value(formData, "email").toLowerCase();
+  if (isEmail(email)) {
+    const supabase = await createClient();
+    await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: `${getSiteUrl()}/auth/callback?next=/account`,
+      },
+    });
+  }
+
+  redirect(
+    authUrl(
+      "/login",
+      "success",
+      "如果该邮箱尚未验证，新的确认邮件已发送，请检查收件箱。",
+    ),
+  );
+}
+
 export async function signUp(
   _previousState: SignUpState,
   formData: FormData,

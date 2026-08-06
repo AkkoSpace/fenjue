@@ -6,7 +6,7 @@ import { AuthShell, AuthShellFallback } from "@/components/auth/auth-shell";
 import { PasswordField } from "@/components/auth/password-field";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Input } from "@/components/ui/input";
-import { signIn } from "@/lib/auth/actions";
+import { resendConfirmation, signIn } from "@/lib/auth/actions";
 import { type AuthPageProps, getAuthPageState } from "@/lib/auth/page";
 
 export const metadata: Metadata = {
@@ -67,6 +67,14 @@ async function LoginContent({ searchParams }: AuthPageProps) {
           </Link>
         </div>
         <SubmitButton pendingLabel="正在登录">登录</SubmitButton>
+        <button
+          className="min-h-11 w-full text-sm text-muted-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+          formAction={resendConfirmation}
+          formNoValidate
+          type="submit"
+        >
+          重新发送验证邮件
+        </button>
       </form>
     </AuthShell>
   );
