@@ -4,7 +4,7 @@
 
 焚诀服务使用豆包、Gemini、ChatGPT、Grok 等工具生成图片的普通用户。核心闭环是：浏览图片，判断是否喜欢，复制完整提示词，前往自己的工具生成。
 
-V0.1 只做纯文生图案例展示与账户基础，不做投稿、搜索、筛选、收藏、Reaction、授权审核或图片编辑。公开浏览、查看详情和复制提示词始终不要求登录。
+V0.1 只做纯文生图案例展示、账户基础和统一作品发布，不做搜索、筛选、收藏、Reaction、授权审核或图片编辑。公开浏览、查看详情和复制提示词始终不要求登录；发布作品需要完成邮箱验证。
 
 ## 设计方向
 
@@ -34,6 +34,8 @@ Supabase Auth
         +-- Resend SMTP -> 邮箱确认 / 密码重置
         +-- Proxy 刷新会话 -> 账户页 / 后续管理页
         +-- profiles + RLS -> user / admin
+        |
+        +-- /submit -> 登录用户统一发布 -> R2 预签名直传 + Supabase 事务写入
 ```
 
 ## 核心组件
@@ -47,12 +49,17 @@ Supabase Auth
 - `src/lib/auth/actions.ts`: 邮箱密码注册、登录、找回密码、更新密码和退出的 Server Actions。
 - `src/app/(login|register|forgot-password|reset-password|account)`: 访客优先的完整认证与账户流程。
 - `src/app/prompts/[slug]/page.tsx`: 作品详情、作者来源、完整提示词和复制操作。
+- `src/app/submit/page.tsx`: 登录用户统一作品发布入口。
+- `src/components/submission/prompt-editor.tsx`: 多图预览、排序、删除和发布状态。
+- `src/app/api/uploads/presign/route.ts`: 校验登录用户并签发短期 R2 PUT 地址。
+- `src/lib/content/actions.ts`: 校验作品元数据并调用 Supabase 事务函数。
 
 ## 设计决策
 
 | 日期 | 决策 | 理由 | 影响 |
 |------|------|------|------|
 | 2026-07-30 | Next.js 16.2.12 + App Router | 保留 SSR、ISR、Streaming、Cache Components 和后续动态能力 | 需要 Node.js Runtime 与 Vercel 部署 |
+| 2026-08-06 | 升级 Next.js 16.3.0 稳定版 | 修复旧版 PostCSS 与 Sharp 传递依赖的高危安全公告 | 同步升级 `eslint-config-next`，生产依赖审计恢复为 0 |
 | 2026-07-30 | Tailwind CSS + shadcn/ui + Lucide | 复用可访问的交互基础，同时完整定制焚诀视觉 | 不直接采用 shadcn 默认主题 |
 | 2026-07-30 | Supabase 元数据 + R2 object key | 图片和内容职责分离，支持后续扩展 | V0.1 仍提供本地 seed fallback |
 | 2026-07-30 | 首页发现 + 独立详情页 | 首页只服务连续看图，避免任何元信息遮挡或拉长作品流 | 首页只显示图片、标题和多图数量；详情页承接作者、来源、提示词和复制操作 |
@@ -60,12 +67,14 @@ Supabase Auth
 | 2026-07-30 | 访客优先的 Supabase Auth | 浏览不应被登录阻断，但管理与未来 Reaction 需要稳定身份 | 邮箱密码、邮箱验证、密码重置与 RBAC；SMTP 由 Supabase 统一接入，当前使用 Resend |
 | 2026-07-30 | 天地玄黄延后为用户 Reaction | 品阶应来自真实用户反馈，不应由编辑预设 | V0.1 删除 rank 字段和等级 UI，后续版本单独设计投票与聚合模型 |
 | 2026-08-03 | 缓存公开内容查询 | Cache Components 要求远端数据位于显式缓存边界，且内容更新不需要逐请求查询 | `getPrompts()` 使用分钟级后台重验证和 `prompts` 标签；后续管理操作通过标签主动失效 |
+| 2026-08-06 | 登录用户统一作品上传 | 上传本身是通用能力，管理员只是额外拥有全站管理权限的用户 | 新增作品所有权与 RLS、R2 写入配置、上传页面和作品事务写入函数；匿名浏览不变 |
 
 ## 已知限制
 
 - V0.1 已包含用户登录与账户基础，但没有 Reaction 或投票；天地玄黄仅保留在后续 Roadmap。
 - 当前首批图片保留本地开发副本，生产环境通过 R2 自定义域名提供同一批资源。
 - 暂不提供图片压缩、裁剪或格式转换服务。
+- 第一版作品发布后直接公开；预签名上传中途取消可能留下 R2 孤儿对象，后续通过生命周期清理、限流和审核流程处理。
 - Resend 发件域名、DNS 与 Supabase SMTP 仍需在各自控制台完成配置；仓库只保存通用参数和邮件模板，不保存凭据。
 
 ## 安全考量
@@ -79,6 +88,7 @@ Supabase Auth
 - 注册确认、密码重置和登录后的 `next` 仅允许站内绝对路径，阻止开放重定向。
 - 邮箱确认和密码重置使用一次性 `token_hash` 由服务端 `verifyOtp`，不依赖注册或找回密码时的浏览器 PKCE Cookie；回调仍兼容 OAuth/PKCE `code`。
 - 新用户只能获得 `user` 角色；`profiles.role` 不允许普通用户更新，内容写入策略还会调用 `is_admin()` 二次校验。
+- 预签名地址只向已验证会话签发，且对象 key 必须使用当前用户前缀；R2 写入凭据仅在服务端使用。
 - 外部作者和来源链接统一 `target="_blank"` + `rel="noreferrer"`。
 - 提示词只作为文本渲染，不使用 `dangerouslySetInnerHTML`。
 
