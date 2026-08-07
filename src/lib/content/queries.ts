@@ -3,12 +3,8 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 
-import { seedPrompts } from "@/content/prompts";
 import type { PromptEntryData, PromptImage } from "@/lib/content/types";
-import {
-  getSupabasePublicConfig,
-  hasSupabasePublicConfig,
-} from "@/lib/supabase/config";
+import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
 interface PromptImageRow {
   alt: string;
@@ -28,20 +24,28 @@ interface PromptRow {
   title: string;
 }
 
-function r2Image(objectKey: string, row: PromptImageRow): PromptImage {
-  const baseUrl = process.env.R2_PUBLIC_BASE_URL?.replace(/\/$/, "");
-
+function r2Image(
+  baseUrl: string,
+  objectKey: string,
+  row: PromptImageRow,
+): PromptImage {
   return {
     alt: row.alt,
     height: row.height,
     objectKey,
-    src: baseUrl ? `${baseUrl}/${objectKey}` : undefined,
+    src: `${baseUrl}/${objectKey}`,
     width: row.width,
   };
 }
 
-function hasRemoteContentConfig() {
-  return Boolean(hasSupabasePublicConfig() && process.env.R2_PUBLIC_BASE_URL);
+function getR2PublicBaseUrl() {
+  const baseUrl = process.env.R2_PUBLIC_BASE_URL?.replace(/\/$/, "");
+
+  if (!baseUrl) {
+    throw new Error("R2 public configuration is missing");
+  }
+
+  return baseUrl;
 }
 
 export async function getPrompts(): Promise<PromptEntryData[]> {
@@ -49,11 +53,8 @@ export async function getPrompts(): Promise<PromptEntryData[]> {
   cacheLife("minutes");
   cacheTag("prompts");
 
-  if (!hasRemoteContentConfig()) {
-    return seedPrompts;
-  }
-
   const { publishableKey, url } = getSupabasePublicConfig();
+  const r2BaseUrl = getR2PublicBaseUrl();
   const supabase = createClient(url, publishableKey, {
     auth: {
       autoRefreshToken: false,
@@ -70,19 +71,19 @@ export async function getPrompts(): Promise<PromptEntryData[]> {
     .eq("published", true)
     .order("published_at", { ascending: false });
 
-  if (error || !data?.length) {
-    console.warn("Unable to load published prompts from Supabase", error);
-    return seedPrompts;
+  if (error) {
+    console.error("Unable to load published prompts from Supabase", error);
+    throw new Error("Unable to load published prompts from Supabase");
   }
 
-  return (data as PromptRow[]).map((row) => ({
+  return ((data ?? []) as PromptRow[]).map((row) => ({
     author: {
       name: row.author_name,
       url: row.author_url,
     },
     images: [...row.prompt_images]
       .sort((a, b) => a.position - b.position)
-      .map((image) => r2Image(image.object_key, image)),
+      .map((image) => r2Image(r2BaseUrl, image.object_key, image)),
     prompt: row.prompt,
     slug: row.slug,
     sourceUrl: row.source_url,

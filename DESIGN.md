@@ -20,7 +20,8 @@ Next.js Server Component
         |
         +-- getPrompts()
         |     +-- Supabase + R2 config -> published prompts
-        |     +-- missing config        -> local seed fallback
+        |     +-- empty database       -> empty work list
+        |     +-- missing/error        -> explicit failure
         |
         +-- 首页 PromptEntry -> PromptGallery
         |
@@ -40,8 +41,7 @@ Supabase Auth
 
 ## 核心组件
 
-- `src/lib/content/queries.ts`: 服务端内容查询和本地 fallback。
-- `src/content/prompts.ts`: 首批 3 条可直接开发验证的 seed 数据。
+- `src/lib/content/queries.ts`: 从 Supabase 查询作品元数据，并将 R2 object key 转换为公开图片地址。
 - `src/components/prompt-entry.tsx`: 首页瀑布流中的单条作品，只展示图片、标题、多图数量与详情页入口。
 - `src/components/prompt-gallery.tsx`: 保持图片比例的响应式画廊；首页多图封面堆叠最多三张真实图片，详情页展示完整集合。
 - `src/components/prompt-copy-button.tsx`: 浏览器端复制和成功/失败反馈。
@@ -61,7 +61,7 @@ Supabase Auth
 | 2026-07-30 | Next.js 16.2.12 + App Router | 保留 SSR、ISR、Streaming、Cache Components 和后续动态能力 | 需要 Node.js Runtime 与 Vercel 部署 |
 | 2026-08-06 | 升级 Next.js 16.3.0 稳定版 | 修复旧版 PostCSS 与 Sharp 传递依赖的高危安全公告 | 同步升级 `eslint-config-next`，生产依赖审计恢复为 0 |
 | 2026-07-30 | Tailwind CSS + shadcn/ui + Lucide | 复用可访问的交互基础，同时完整定制焚诀视觉 | 不直接采用 shadcn 默认主题 |
-| 2026-07-30 | Supabase 元数据 + R2 object key | 图片和内容职责分离，支持后续扩展 | V0.1 仍提供本地 seed fallback |
+| 2026-07-30 | Supabase 元数据 + R2 object key | 图片和内容职责分离，支持后续扩展 | Supabase 与 R2 是唯一内容源，不提供本地数据回退 |
 | 2026-07-30 | 首页发现 + 独立详情页 | 首页只服务连续看图，避免任何元信息遮挡或拉长作品流 | 首页只显示图片、标题和多图数量；详情页承接作者、来源、提示词和复制操作 |
 | 2026-07-30 | 克制瀑布流 + 多图堆叠封面 | 提高同屏图片密度，同时让多图作品一眼可辨 | 手机单列、常规桌面双列、超宽桌面三列；封面最多露出三张真实图片并标注总数 |
 | 2026-07-30 | 访客优先的 Supabase Auth | 浏览不应被登录阻断，但管理与未来 Reaction 需要稳定身份 | 邮箱密码、邮箱验证、密码重置与 RBAC；SMTP 由 Supabase 统一接入，当前使用 Resend |
@@ -74,7 +74,6 @@ Supabase Auth
 ## 已知限制
 
 - V0.1 已包含用户登录与账户基础，但没有 Reaction 或投票；天地玄黄仅保留在后续 Roadmap。
-- 当前首批图片保留本地开发副本，生产环境通过 R2 自定义域名提供同一批资源。
 - 暂不提供图片压缩、裁剪或格式转换服务。
 - 第一版作品发布后直接公开；预签名上传中途取消可能留下 R2 孤儿对象，后续通过生命周期清理、限流和审核流程处理。
 - Supabase 与 R2 无法组成同一事务；永久删除先移除数据库记录再清理图片，R2 清理失败时需要按后台提示人工检查孤儿对象。

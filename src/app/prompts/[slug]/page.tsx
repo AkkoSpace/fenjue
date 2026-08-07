@@ -5,16 +5,12 @@ import { notFound } from "next/navigation";
 
 import { PromptCopyButton } from "@/components/prompt-copy-button";
 import { PromptGallery } from "@/components/prompt-gallery";
-import { getPromptBySlug, getPrompts } from "@/lib/content/queries";
+import { getPromptBySlug } from "@/lib/content/queries";
+
+export const instant = false;
 
 interface PromptPageProps {
   params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-  const prompts = await getPrompts();
-
-  return prompts.map((prompt) => ({ slug: prompt.slug }));
 }
 
 export async function generateMetadata({

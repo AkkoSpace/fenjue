@@ -10,7 +10,7 @@
 - Supabase Auth 提供邮箱密码、邮箱验证和密码重置；首个已验证账户成为唯一超管，访客浏览无需登录
 - 登录用户通过统一的 `/submit` 页面上传作品；管理员通过 `/admin` 搜索、上下架和删除全站作品
 - Cloudflare R2 保存生产图片，Vercel 部署
-- 首批 3 条纯文生图案例，当前提供本地 seed fallback 以便开发
+- Supabase 是作品内容的唯一数据源；数据库为空时首页不展示作品
 - 首页仅用于浏览作品，独立详情页提供提示词复制、作者和来源
 - 天地玄黄 Reaction 规划在后续版本，V0.1 不预设等级或投票数据
 
@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-复制 `.env.example` 为 `.env.local`，填入 Supabase 和 R2 公共域名后，服务端会优先读取 Supabase；未配置时使用 `src/content/prompts.ts` 的本地 seed。
+复制 `.env.example` 为 `.env.local`，填入 Supabase 和 R2 公共域名。两项配置都是内容读取的必要条件，项目不提供本地数据回退。
 
 认证、通用 SMTP、Resend 和邮件模板配置见 [`docs/AUTH.md`](docs/AUTH.md)。
 作品上传、R2 服务端凭据、CORS 和 Supabase 迁移见 [`docs/UPLOADS.md`](docs/UPLOADS.md)。
