@@ -4,9 +4,16 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text check (char_length(display_name) <= 50),
   role public.app_role not null default 'user',
+  is_super_admin boolean not null default false,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint profiles_super_admin_requires_admin
+    check (not is_super_admin or role = 'admin')
 );
+
+create unique index profiles_single_super_admin_idx
+  on public.profiles (is_super_admin)
+  where is_super_admin;
 
 alter table public.profiles enable row level security;
 
@@ -34,12 +41,37 @@ returns trigger
 language plpgsql
 security definer set search_path = ''
 as $$
+declare
+  should_be_super_admin boolean := false;
 begin
-  insert into public.profiles (id, display_name)
+  if new.email_confirmed_at is not null then
+    perform pg_catalog.pg_advisory_xact_lock(
+      pg_catalog.hashtext('fenjue:super_admin')
+    );
+
+    select not exists (
+      select 1
+      from public.profiles
+      where is_super_admin
+    ) into should_be_super_admin;
+  end if;
+
+  insert into public.profiles (
+    id,
+    display_name,
+    role,
+    is_super_admin
+  )
   values (
     new.id,
-    nullif(trim(coalesce(new.raw_user_meta_data ->> 'display_name', '')), '')
+    nullif(trim(coalesce(new.raw_user_meta_data ->> 'display_name', '')), ''),
+    case
+      when should_be_super_admin then 'admin'::public.app_role
+      else 'user'::public.app_role
+    end,
+    should_be_super_admin
   );
+
   return new;
 end;
 $$;
@@ -49,6 +81,44 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 revoke all on function public.handle_new_user() from public;
+
+create or replace function public.promote_first_confirmed_user()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtext('fenjue:super_admin')
+  );
+
+  if not exists (
+    select 1
+    from public.profiles
+    where is_super_admin
+  ) then
+    update public.profiles
+    set
+      role = 'admin',
+      is_super_admin = true,
+      updated_at = now()
+    where id = new.id;
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_confirmed
+  after update of email_confirmed_at on auth.users
+  for each row
+  when (
+    old.email_confirmed_at is null
+    and new.email_confirmed_at is not null
+  )
+  execute procedure public.promote_first_confirmed_user();
+
+revoke all on function public.promote_first_confirmed_user() from public;
 
 create or replace function public.is_admin()
 returns boolean

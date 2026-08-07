@@ -43,10 +43,16 @@ async function AccountContent({ searchParams }: AuthPageProps) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name,role")
+    .select("display_name,is_super_admin,role")
     .eq("id", user.id)
     .maybeSingle();
   const { message } = await getAuthPageState(searchParams);
+  const isAdmin = profile?.role === "admin";
+  const identity = profile?.is_super_admin
+    ? "超级管理员"
+    : isAdmin
+      ? "管理员"
+      : "用户";
 
   return (
     <AuthShell
@@ -68,13 +74,11 @@ async function AccountContent({ searchParams }: AuthPageProps) {
         </div>
         <div className="grid gap-1 py-4 sm:grid-cols-[6rem_1fr] sm:gap-4">
           <dt className="text-muted-foreground">身份</dt>
-          <dd className="text-foreground">
-            {profile?.role === "admin" ? "管理员" : "用户"}
-          </dd>
+          <dd className="text-foreground">{identity}</dd>
         </div>
       </dl>
 
-      {profile?.role === "admin" ? (
+      {isAdmin ? (
         <Link
           className={cn(
             buttonVariants({ size: "lg" }),
@@ -87,7 +91,7 @@ async function AccountContent({ searchParams }: AuthPageProps) {
         </Link>
       ) : null}
 
-      <form action={signOut} className={profile?.role === "admin" ? "mt-3" : "mt-6"}>
+      <form action={signOut} className={isAdmin ? "mt-3" : "mt-6"}>
         <Button
           className="min-h-11 w-full rounded-sm"
           size="lg"

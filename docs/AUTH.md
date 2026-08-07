@@ -84,14 +84,62 @@ SMTP 是部署外配置，因此仓库不会假装它已经生效。上线验收
 
 ## 管理员授权
 
-所有新账户默认角色均为 `user`。完成首个管理员注册和邮箱验证后，在 SQL Editor 显式提升该账户：
+焚诀区分普通用户、管理员和唯一超级管理员：
+
+- 普通用户的 `profiles.role` 为 `user`。
+- 管理员的 `profiles.role` 为 `admin`，可以进入内容管理后台。
+- 超级管理员同时满足 `role = 'admin'` 与 `is_super_admin = true`。
+
+全新数据库执行 `20260730010000_create_profiles.sql` 后，第一个完成邮箱验证的账户会自动成为超级管理员。数据库使用事务级 advisory lock 和部分唯一索引，保证并发情况下最多只有一个超级管理员。当前开发库不保留历史兼容逻辑；重新初始化数据库后，需要重新注册并验证站点所有者账户。
+
+普通管理员目前由数据库所有者在 SQL Editor 中显式授权；后续增加用户管理功能时，该操作只能开放给超级管理员：
 
 ```sql
 update public.profiles
 set role = 'admin'
 where id = (
   select id from auth.users where email = 'your-admin-email@example.com'
-);
+)
+and is_super_admin = false;
 ```
 
-管理员角色不能由用户自行修改。RLS 只允许用户读取自己的 profile，并仅能更新 `display_name`。
+超级管理员转移必须在同一事务块中完成；目标邮箱不存在或尚未验证时整个操作会回滚：
+
+```sql
+do $$
+declare
+  target_user_id uuid;
+begin
+  select id
+  into strict target_user_id
+  from auth.users
+  where lower(email) = lower('new-super-admin@example.com')
+    and email_confirmed_at is not null;
+
+  update public.profiles
+  set is_super_admin = false
+  where is_super_admin;
+
+  update public.profiles
+  set role = 'admin', is_super_admin = true
+  where id = target_user_id;
+
+  if not found then
+    raise exception 'Target user profile does not exist';
+  end if;
+end;
+$$;
+```
+
+管理员角色和超管标记都不能由普通用户自行修改。RLS 只允许用户读取自己的 profile，并仅能更新 `display_name`。新部署必须由站点所有者先完成首个账户的邮箱验证，再开放公开注册，避免陌生用户抢先成为初始化超管。
+
+执行迁移后可以用下面的查询核对唯一超管：
+
+```sql
+select users.email, profiles.role, profiles.is_super_admin
+from public.profiles as profiles
+inner join auth.users as users on users.id = profiles.id
+where profiles.is_super_admin;
+```
+
+查询应只返回一行，且 `role = 'admin'`、`is_super_admin = true`。

@@ -7,7 +7,7 @@
 - Next.js 16.3.0 + TypeScript + App Router
 - Tailwind CSS 4 + shadcn/ui 4 + Lucide
 - Supabase PostgreSQL 保存内容元数据与 R2 object key
-- Supabase Auth 提供邮箱密码、邮箱验证和密码重置；访客浏览无需登录
+- Supabase Auth 提供邮箱密码、邮箱验证和密码重置；首个已验证账户成为唯一超管，访客浏览无需登录
 - 登录用户通过统一的 `/submit` 页面上传作品；管理员通过 `/admin` 搜索、上下架和删除全站作品
 - Cloudflare R2 保存生产图片，Vercel 部署
 - 首批 3 条纯文生图案例，当前提供本地 seed fallback 以便开发

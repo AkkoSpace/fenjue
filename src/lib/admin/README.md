@@ -12,7 +12,7 @@
 - `actions.ts`：执行上下架和永久删除，并刷新公开作品缓存。
 - 所有入口均通过 `requireAdmin()` 校验当前 Supabase 用户的管理员角色。
 
-本模块不负责管理员授权、上传流程、用户管理、审核队列或统计系统。管理员授权由 Supabase `profiles.role` 控制，上传统一使用 `/submit`。
+本模块不负责管理员授权、上传流程、用户管理、审核队列或统计系统。管理员授权由 Supabase `profiles.role` 控制，唯一超管由 `profiles.is_super_admin` 标记，上传统一使用 `/submit`。
 
 ## 依赖关系
 

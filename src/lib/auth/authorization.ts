@@ -23,7 +23,7 @@ const getAdminContext = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name,role")
+    .select("display_name,is_super_admin,role")
     .eq("id", user.id)
     .maybeSingle();
 
