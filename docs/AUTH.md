@@ -5,7 +5,7 @@
 ## 应用环境变量
 
 ```dotenv
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=http://localhost:42486
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
 R2_PUBLIC_BASE_URL=https://fenjue-images.akko.space
@@ -22,7 +22,7 @@ R2_PUBLIC_BASE_URL=https://fenjue-images.akko.space
 3. 最小密码长度设置为 10。
 4. 可用时开启 Leaked password protection。
 5. Site URL 设置为正式站点地址。
-6. Redirect URLs 添加 `http://localhost:3000/**` 和正式站点的 `/**`。
+6. Redirect URLs 添加 `http://localhost:42486/**` 和正式站点的 `/**`。
 
 注册和密码重置邮件均携带一次性 `token_hash` 回到 `/auth/callback`，由服务端调用 `verifyOtp` 建立会话；确认链接不依赖注册时浏览器中的 PKCE Cookie，并且只接受站内 `next` 路径，防止开放重定向。回调继续兼容使用 `code` 的 OAuth/PKCE 流程。
 

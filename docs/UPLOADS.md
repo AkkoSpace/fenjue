@@ -31,7 +31,7 @@ R2_BUCKET_NAME=your_r2_bucket_name
 [
   {
     "AllowedOrigins": [
-      "http://localhost:3000",
+      "http://localhost:42486",
       "https://fenjue.akko.space"
     ],
     "AllowedMethods": ["PUT"],
