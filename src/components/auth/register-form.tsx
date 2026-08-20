@@ -93,7 +93,7 @@ export function RegisterForm() {
       />
       <SubmitButton pendingLabel="正在创建">创建账户</SubmitButton>
       <p className="text-center text-sm text-muted-foreground">
-        已有账户？{" "}
+        同一邮箱只对应一个账户。已有账户？{" "}
         <Link
           className="text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
           href="/login"

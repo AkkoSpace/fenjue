@@ -193,7 +193,7 @@ export async function signUp(
     authUrl(
       "/login",
       "success",
-      "验证邮件已发送。完成邮箱验证后即可登录。",
+      "如果这是新邮箱，我们已发送验证邮件，请检查收件箱。如果已有账户，请直接登录或找回密码。",
     ),
   );
 }

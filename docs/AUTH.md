@@ -30,6 +30,8 @@ R2_PUBLIC_BASE_URL=https://fenjue-images.akko.space
 
 应用中的密码登录不是 passwordless：注册使用邮箱和密码，登录校验同一密码；确认邮件只用于证明邮箱归属，不代替密码。密码及其哈希均由 Supabase Auth 托管，不进入 `public.profiles`。
 
+重复提交已注册邮箱不会创建第二个账户，也不会覆盖已有密码。启用邮箱确认后，Supabase 会对已确认账户返回模糊结果以防止邮箱枚举；应用不根据邮箱是否存在显示不同提示，而是统一引导新用户检查验证邮件、已有用户直接登录或找回密码。
+
 ## 通用 SMTP
 
 Supabase Dashboard 的 Authentication > SMTP Settings 接受任何标准 SMTP 服务：

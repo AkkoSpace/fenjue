@@ -67,14 +67,19 @@ async function LoginContent({ searchParams }: AuthPageProps) {
           </Link>
         </div>
         <SubmitButton pendingLabel="正在登录">登录</SubmitButton>
-        <button
-          className="min-h-11 w-full text-sm text-muted-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-          formAction={resendConfirmation}
-          formNoValidate
-          type="submit"
-        >
-          重新发送验证邮件
-        </button>
+        <div className="border-t border-border/80 pt-4 text-center">
+          <p className="text-xs leading-5 text-muted-foreground">
+            没有收到验证邮件？填写注册邮箱后可以重新发送。
+          </p>
+          <button
+            className="mt-2 min-h-11 text-sm text-muted-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+            formAction={resendConfirmation}
+            formNoValidate
+            type="submit"
+          >
+            重新发送验证邮件
+          </button>
+        </div>
       </form>
     </AuthShell>
   );
