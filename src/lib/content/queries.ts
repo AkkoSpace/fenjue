@@ -17,6 +17,7 @@ interface PromptImageRow {
 interface PromptRow {
   author_name: string;
   author_url: string;
+  is_nsfw: boolean;
   prompt: string;
   prompt_images: PromptImageRow[];
   slug: string;
@@ -66,7 +67,7 @@ export async function getPrompts(): Promise<PromptEntryData[]> {
   const { data, error } = await supabase
     .from("prompts")
     .select(
-      "slug,title,prompt,author_name,author_url,source_url,prompt_images(position,object_key,alt,width,height)",
+      "slug,title,prompt,author_name,author_url,source_url,is_nsfw,prompt_images(position,object_key,alt,width,height)",
     )
     .eq("published", true)
     .order("published_at", { ascending: false });
@@ -84,6 +85,7 @@ export async function getPrompts(): Promise<PromptEntryData[]> {
     images: [...row.prompt_images]
       .sort((a, b) => a.position - b.position)
       .map((image) => r2Image(r2BaseUrl, image.object_key, image)),
+    isNsfw: row.is_nsfw,
     prompt: row.prompt,
     slug: row.slug,
     sourceUrl: row.source_url,

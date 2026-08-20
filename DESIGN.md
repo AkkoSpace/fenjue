@@ -23,7 +23,7 @@ Next.js Server Component
         |     +-- empty database       -> empty work list
         |     +-- missing/error        -> explicit failure
         |
-        +-- 首页 PromptEntry -> PromptGallery
+        +-- 首页 PromptEntry -> PromptGallery -> NSFW 默认模糊保护
         |
         +-- 详情页 PromptGallery + PromptCopyButton
                                       |
@@ -52,6 +52,7 @@ Supabase Auth
 - `src/lib/content/queries.ts`: 从 Supabase 查询作品元数据，并将 R2 object key 转换为公开图片地址。
 - `src/components/prompt-entry.tsx`: 首页瀑布流中的单条作品，只展示图片、标题、多图数量与详情页入口。
 - `src/components/prompt-gallery.tsx`: 保持图片比例的响应式画廊；首页多图封面堆叠最多三张真实图片，详情页展示完整集合。
+- `src/components/sensitive-image-guard.tsx`: 为 NSFW 作品提供默认模糊与单次点击显示，不跨页面持久化解锁状态。
 - `src/components/prompt-copy-button.tsx`: 浏览器端复制和成功/失败反馈。
 - `src/lib/supabase/*`: Supabase 浏览器、服务端和 Proxy 会话客户端。
 - `src/lib/auth/actions.ts`: 邮箱密码注册、登录、找回密码、更新密码和退出的 Server Actions。
@@ -80,6 +81,7 @@ Supabase Auth
 | 2026-08-07 | 首个已验证账户成为唯一超管 | 需要稳定的初始管理身份，同时为以后增加普通管理员保留层级 | `profiles.is_super_admin` 使用部分唯一索引；事务锁防止并发产生多个超管，普通管理员继续使用 `admin` 角色 |
 | 2026-08-20 | 接入 Vercel Web Analytics | 上线早期需要用真实访问数据判断内容与渠道表现 | 根布局统一采集匿名页面访问；V0.1 不发送自定义事件或用户身份信息 |
 | 2026-08-20 | 接入 Vercel Speed Insights | 图片站的加载速度、响应性与视觉稳定性直接影响浏览体验 | 根布局采集匿名 Core Web Vitals；不接入业务数据或用户身份 |
+| 2026-08-20 | 增加作品级 NSFW 保护 | 敏感图片需要由访客主动选择查看，同时不阻断作品收录与提示词复用 | 上传时默认关闭；首页、详情和后台缩略图默认模糊，点击后仅在当前页面显示 |
 
 ## 已知限制
 
@@ -106,6 +108,7 @@ Supabase Auth
 - 管理后台页面和每个变更 Action 都重新读取 Supabase 用户及 `profiles.role`；按钮可见性不作为权限边界，数据库 RLS 继续限制全站读取、更新和删除。
 - 后台搜索只接受有限长度的文字、数字与常用标识字符；作品 ID 必须通过 UUID 格式校验，操作完成后的返回地址只允许 `/admin`。
 - 预签名地址只向已验证会话签发，且对象 key 必须使用当前用户前缀；R2 写入凭据仅在服务端使用。
+- NSFW 只是一层默认展示保护，不是访问控制：R2 图片地址仍为公开资源，不能用于承载违法内容或替代内容审核。
 - 外部作者和来源链接统一 `target="_blank"` + `rel="noreferrer"`。
 - 提示词只作为文本渲染，不使用 `dangerouslySetInnerHTML`。
 - Web Analytics 仅启用默认匿名页面访问，不发送邮箱、用户 ID、提示词内容或其他自定义事件；认证回调由 Route Handler 直接重定向，不加载浏览器统计组件。
@@ -118,6 +121,16 @@ Supabase Auth
 - 已知风险：新部署若在站点所有者确认首个账户前开放公开注册，陌生用户可能先成为初始化超管；上线流程必须先完成所有者邮箱验证。邮件可达率与域名声誉依赖 Resend/DNS 配置；Supabase 与 R2 的跨服务删除不具备原子性，上线前必须验证邮件链路和真实作品删除流程。
 
 ## 变更历史
+
+### 2026-08-20 - 增加 NSFW 图片保护
+
+**变更内容**：上传表单增加作品级 NSFW 开关；被标记作品在首页、详情页和管理后台默认模糊，访客点击后才显示图片。
+
+**变更理由**：允许收录具有参考价值的敏感题材，同时避免访客在连续浏览时被动看到不适内容。
+
+**影响范围**：Supabase 作品模型与事务函数、上传表单、公开作品查询、首页、详情页和后台缩略图。
+
+**决策依据**：开关默认关闭，解锁状态只保留在当前组件生命周期中；该能力只负责展示保护，不将公开 R2 地址误作权限边界。
 
 ### 2026-08-20 - 优化重复邮箱注册反馈
 

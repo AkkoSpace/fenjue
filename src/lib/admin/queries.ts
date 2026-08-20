@@ -19,6 +19,7 @@ interface PromptAdminRow {
   author_name: string;
   created_at: string;
   id: string;
+  is_nsfw: boolean;
   prompt_images: PromptImageRow[];
   published: boolean;
   published_at: string | null;
@@ -38,6 +39,7 @@ export interface AdminPromptListItem {
   createdAt: string;
   id: string;
   imageCount: number;
+  isNsfw: boolean;
   published: boolean;
   publishedAt: string | null;
   slug: string;
@@ -87,7 +89,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
   let listQuery = supabase
     .from("prompts")
     .select(
-      "id,slug,title,author_name,source_url,published,published_at,created_at,prompt_images(position,object_key,alt,width,height)",
+      "id,slug,title,author_name,source_url,is_nsfw,published,published_at,created_at,prompt_images(position,object_key,alt,width,height)",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
@@ -163,6 +165,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
       createdAt: row.created_at,
       id: row.id,
       imageCount: images.length,
+      isNsfw: row.is_nsfw,
       published: row.published,
       publishedAt: row.published_at,
       slug: row.slug,

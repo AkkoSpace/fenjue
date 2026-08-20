@@ -23,6 +23,7 @@ export interface PublishPromptInput {
   authorName: string;
   authorUrl: string;
   images: PublishPromptImageInput[];
+  isNsfw: boolean;
   prompt: string;
   sourceUrl: string;
   title: string;
@@ -130,6 +131,7 @@ export async function publishPrompt(
     authorName: clean(rawInput?.authorName),
     authorUrl: clean(rawInput?.authorUrl),
     images: Array.isArray(rawInput?.images) ? rawInput.images : [],
+    isNsfw: rawInput?.isNsfw === true,
     prompt: clean(rawInput?.prompt),
     sourceUrl: clean(rawInput?.sourceUrl),
     title: clean(rawInput?.title),
@@ -153,6 +155,7 @@ export async function publishPrompt(
         position: image.position,
         width: image.width,
       })),
+      p_is_nsfw: input.isNsfw,
       p_prompt: input.prompt,
       p_slug: slug,
       p_source_url: input.sourceUrl,

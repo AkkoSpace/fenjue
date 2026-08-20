@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { PromptCopyButton } from "@/components/prompt-copy-button";
 import { PromptGallery } from "@/components/prompt-gallery";
+import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
 import { getPromptBySlug } from "@/lib/content/queries";
 
 export const instant = false;
@@ -52,7 +53,13 @@ export default async function PromptPage({ params }: PromptPageProps) {
           {entry.title}
         </h1>
 
-        <PromptGallery images={entry.images} title={entry.title} />
+        {entry.isNsfw ? (
+          <SensitiveImageGuard title={entry.title}>
+            <PromptGallery images={entry.images} title={entry.title} />
+          </SensitiveImageGuard>
+        ) : (
+          <PromptGallery images={entry.images} title={entry.title} />
+        )}
 
         <div className="mt-7 grid gap-8 border-t border-border/80 pt-6 sm:mt-9 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.34fr)] lg:gap-12">
           <section aria-labelledby="prompt-heading">

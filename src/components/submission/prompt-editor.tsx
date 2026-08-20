@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   publishPrompt,
@@ -83,6 +84,7 @@ export function PromptEditor({ defaultAuthorName }: PromptEditorProps) {
   const [authorUrl, setAuthorUrl] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [images, setImages] = useState<EditorImage[]>([]);
+  const [isNsfw, setIsNsfw] = useState(false);
   const [error, setError] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [uploadedCount, setUploadedCount] = useState(0);
@@ -230,6 +232,7 @@ export function PromptEditor({ defaultAuthorName }: PromptEditorProps) {
         authorName,
         authorUrl,
         images: imageInputs,
+        isNsfw,
         prompt,
         sourceUrl,
         title,
@@ -480,6 +483,30 @@ export function PromptEditor({ defaultAuthorName }: PromptEditorProps) {
               ) : null}
             </div>
           )}
+
+          <div className="mt-5 flex items-start justify-between gap-5 border-y border-border/80 py-4">
+            <div className="min-w-0">
+              <label
+                className="block cursor-pointer text-sm font-medium text-foreground"
+                htmlFor="is-nsfw"
+              >
+                敏感内容（NSFW）
+              </label>
+              <p
+                className="mt-1 text-xs leading-5 text-muted-foreground"
+                id="is-nsfw-description"
+              >
+                开启后，公开页面会默认模糊图片，访客点击后才会显示。
+              </p>
+            </div>
+            <Switch
+              aria-describedby="is-nsfw-description"
+              checked={isNsfw}
+              disabled={isPublishing}
+              id="is-nsfw"
+              onCheckedChange={setIsNsfw}
+            />
+          </div>
 
           <div aria-live="polite" className="mt-6 min-h-6">
             {error ? (

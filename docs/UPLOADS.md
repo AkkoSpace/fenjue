@@ -6,6 +6,7 @@
 
 - 每组作品需要标题、完整提示词、作者名称与链接、来源链接。
 - 每组作品支持 1-8 张 JPG、PNG、WebP 或 AVIF 图片。
+- 每组作品可以标记为 NSFW；公开图片默认模糊，访客主动点击后才在当前页面显示。
 - 单张图片不超过 10 MB，图片可以预览、删除和调整顺序。
 - 第一版发布后直接公开，不做审核、授权确认和举报工作流；管理员可以在 `/admin` 手动上下架内容。
 - 作品写入 `prompts.user_id`，普通用户只能管理自己的内容，管理员可以管理全部内容。
@@ -46,12 +47,13 @@ R2_BUCKET_NAME=your_r2_bucket_name
 
 ## Supabase 迁移
 
-在 Supabase SQL Editor 中执行 `supabase/migrations/20260806000000_enable_user_submissions.sql`。它会：
+依次执行 `supabase/migrations/20260806000000_enable_user_submissions.sql` 和 `supabase/migrations/20260820023430_add_nsfw_prompts.sql`。它们会：
 
 1. 给已有作品补充 `user_id`，优先归给最早创建的管理员账号。
 2. 允许登录用户创建自己的作品，作者只能读取、修改和删除自己的作品。
 3. 保留管理员全站管理权限。
 4. 创建 `create_prompt_with_images` 事务函数，确保作品和图片记录一起写入。
+5. 增加作品级 `is_nsfw` 标记，并为新上传函数保留旧签名兼容入口。
 
 迁移执行后，配置四个 R2 服务端变量并重启本地服务，再访问 `/submit` 进行首次真实上传。
 

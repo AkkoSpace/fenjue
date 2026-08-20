@@ -16,6 +16,7 @@ import { Suspense } from "react";
 
 import { ActionButton } from "@/components/admin/action-button";
 import { DeletePromptForm } from "@/components/admin/delete-prompt-form";
+import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { setPromptPublication } from "@/lib/admin/actions";
@@ -78,6 +79,35 @@ function AdminFallback() {
         ))}
       </div>
     </main>
+  );
+}
+
+function AdminCover({
+  prompt,
+}: {
+  prompt: Awaited<ReturnType<typeof getAdminPrompts>>["items"][number];
+}) {
+  return (
+    <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+      {prompt.cover ? (
+        <Image
+          alt={prompt.cover.alt}
+          className="object-cover"
+          fill
+          sizes="96px"
+          src={prompt.cover.src}
+        />
+      ) : (
+        <div className="grid size-full place-items-center text-muted-foreground">
+          <ImageIcon aria-hidden="true" className="size-5" />
+        </div>
+      )}
+      {prompt.imageCount > 1 ? (
+        <span className="absolute bottom-1 right-1 bg-foreground/85 px-1.5 py-0.5 text-[0.6875rem] text-background">
+          {prompt.imageCount} 图
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -260,26 +290,13 @@ async function AdminContent({ searchParams }: AdminPageProps) {
                 className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-4 gap-y-4 py-5 md:grid-cols-[6rem_minmax(12rem,1.5fr)_minmax(8rem,0.7fr)_7rem_auto] md:items-center md:gap-x-6"
                 key={prompt.id}
               >
-                <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                  {prompt.cover ? (
-                    <Image
-                      alt={prompt.cover.alt}
-                      className="object-cover"
-                      fill
-                      sizes="96px"
-                      src={prompt.cover.src}
-                    />
-                  ) : (
-                    <div className="grid size-full place-items-center text-muted-foreground">
-                      <ImageIcon aria-hidden="true" className="size-5" />
-                    </div>
-                  )}
-                  {prompt.imageCount > 1 ? (
-                    <span className="absolute bottom-1 right-1 bg-foreground/85 px-1.5 py-0.5 text-[0.6875rem] text-background">
-                      {prompt.imageCount} 图
-                    </span>
-                  ) : null}
-                </div>
+                {prompt.isNsfw ? (
+                  <SensitiveImageGuard compact title={prompt.title}>
+                    <AdminCover prompt={prompt} />
+                  </SensitiveImageGuard>
+                ) : (
+                  <AdminCover prompt={prompt} />
+                )}
 
                 <div className="min-w-0 self-center">
                   <h3 className="truncate text-sm font-medium text-foreground sm:text-base">
@@ -289,7 +306,7 @@ async function AdminContent({ searchParams }: AdminPageProps) {
                     {prompt.authorName}
                   </p>
                   <p className="mt-1 truncate text-xs text-muted-foreground/80">
-                    {prompt.slug}
+                    {prompt.slug}{prompt.isNsfw ? " · NSFW" : ""}
                   </p>
                 </div>
 

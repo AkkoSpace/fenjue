@@ -8,7 +8,8 @@
 - Tailwind CSS 4 + shadcn/ui 4 + Lucide
 - Supabase PostgreSQL 保存内容元数据与 R2 object key
 - Supabase Auth 提供邮箱密码、邮箱验证和密码重置；首个已验证账户成为唯一超管，访客浏览无需登录
-- 登录用户通过统一的 `/submit` 页面上传作品；管理员通过 `/admin` 搜索、上下架和删除全站作品
+- 登录用户通过统一的 `/submit` 页面上传作品并可标记 NSFW；敏感图片默认模糊，访客点击后显示
+- 管理员通过 `/admin` 搜索、上下架和删除全站作品
 - Cloudflare R2 保存生产图片，Vercel 部署并通过 Web Analytics 与 Speed Insights 观察匿名访问和真实用户性能
 - Supabase 是作品内容的唯一数据源；数据库为空时首页不展示作品
 - 首页仅用于浏览作品，独立详情页提供提示词复制、作者和来源

@@ -14,6 +14,7 @@ export interface PromptAuthor {
 export interface PromptEntryData {
   author: PromptAuthor;
   images: PromptImage[];
+  isNsfw: boolean;
   prompt: string;
   slug: string;
   sourceUrl: string;
