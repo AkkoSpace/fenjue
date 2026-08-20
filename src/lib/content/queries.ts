@@ -3,6 +3,10 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 
+import {
+  normalizeAiToolKeys,
+  type AiToolKey,
+} from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
 import type { PromptEntryData, PromptImage } from "@/lib/content/types";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
@@ -22,6 +26,7 @@ interface PromptRow {
   is_nsfw: boolean;
   prompt: string;
   prompt_images: PromptImageRow[];
+  prompt_ai_tools: { tool_key: AiToolKey }[];
   slug: string;
   source_url: string;
   title: string;
@@ -69,7 +74,7 @@ export async function getPrompts(): Promise<PromptEntryData[]> {
   const { data, error } = await supabase
     .from("prompts")
     .select(
-      "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,prompt_images(position,object_key,alt,width,height)",
+      "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key)",
     )
     .eq("published", true)
     .order("published_at", { ascending: false });
@@ -93,6 +98,9 @@ export async function getPrompts(): Promise<PromptEntryData[]> {
     slug: row.slug,
     sourceUrl: row.source_url,
     title: row.title,
+    verifiedTools: normalizeAiToolKeys(
+      row.prompt_ai_tools.map((tool) => tool.tool_key),
+    ),
   }));
 }
 

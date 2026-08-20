@@ -26,6 +26,7 @@ import {
   getAdminPrompts,
 } from "@/lib/admin/queries";
 import { getContentRelationOption } from "@/lib/content/relation";
+import { getAiToolOption } from "@/lib/content/ai-tools";
 import { hasR2WriteConfig } from "@/lib/r2/server";
 import { cn } from "@/lib/utils";
 
@@ -308,6 +309,11 @@ async function AdminContent({ searchParams }: AdminPageProps) {
                   </p>
                   <p className="mt-1 truncate text-xs text-muted-foreground/80">
                     {prompt.slug} · {getContentRelationOption(prompt.contentRelation).label}
+                    {prompt.verifiedTools.length
+                      ? ` · ${prompt.verifiedTools
+                          .map((tool) => getAiToolOption(tool).label)
+                          .join(" / ")}`
+                      : ""}
                     {prompt.isNsfw ? " · NSFW" : ""}
                   </p>
                 </div>

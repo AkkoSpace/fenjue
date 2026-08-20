@@ -1,6 +1,10 @@
 import "server-only";
 
 import { requireAdmin } from "@/lib/auth/authorization";
+import {
+  normalizeAiToolKeys,
+  type AiToolKey,
+} from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
 
 const PAGE_SIZE = 20;
@@ -23,6 +27,7 @@ interface PromptAdminRow {
   id: string;
   is_nsfw: boolean;
   prompt_images: PromptImageRow[];
+  prompt_ai_tools: { tool_key: AiToolKey }[];
   published: boolean;
   published_at: string | null;
   slug: string;
@@ -48,6 +53,7 @@ export interface AdminPromptListItem {
   slug: string;
   sourceUrl: string;
   title: string;
+  verifiedTools: AiToolKey[];
 }
 
 function first(value: string | string[] | undefined) {
@@ -92,7 +98,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
   let listQuery = supabase
     .from("prompts")
     .select(
-      "id,slug,title,author_name,source_url,is_nsfw,content_relation,published,published_at,created_at,prompt_images(position,object_key,alt,width,height)",
+      "id,slug,title,author_name,source_url,is_nsfw,content_relation,published,published_at,created_at,prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key)",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
@@ -175,6 +181,9 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
       slug: row.slug,
       sourceUrl: row.source_url,
       title: row.title,
+      verifiedTools: normalizeAiToolKeys(
+        row.prompt_ai_tools.map((tool) => tool.tool_key),
+      ),
     };
   });
 

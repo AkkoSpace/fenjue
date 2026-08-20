@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { PromptCopyButton } from "@/components/prompt-copy-button";
 import { PromptGallery } from "@/components/prompt-gallery";
 import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
+import { getAiToolOption } from "@/lib/content/ai-tools";
 import { getContentRelationOption } from "@/lib/content/relation";
 import { getPromptBySlug } from "@/lib/content/queries";
 
@@ -90,6 +91,21 @@ export default async function PromptPage({ params }: PromptPageProps) {
                 {contentRelation.label}
               </span>
             </p>
+            {entry.verifiedTools.length ? (
+              <div className="mb-3 border-y border-border/70 py-3">
+                <p className="text-xs text-muted-foreground">已验证工具</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {entry.verifiedTools.map((tool) => (
+                    <span
+                      className="border border-primary/25 bg-primary/5 px-2 py-1 text-xs font-medium text-foreground"
+                      key={tool}
+                    >
+                      {getAiToolOption(tool).label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <a
               className="flex min-h-11 items-center underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
               href={entry.author.url}

@@ -3,6 +3,11 @@
 import { updateTag } from "next/cache";
 
 import {
+  isAiToolKey,
+  normalizeAiToolKeys,
+  type AiToolKey,
+} from "@/lib/content/ai-tools";
+import {
   isContentRelation,
   type ContentRelation,
 } from "@/lib/content/relation";
@@ -32,6 +37,7 @@ export interface PublishPromptInput {
   prompt: string;
   sourceUrl: string;
   title: string;
+  verifiedTools: AiToolKey[];
 }
 
 export type PublishPromptResult =
@@ -75,6 +81,15 @@ function invalidInput(input: PublishPromptInput, userId: string) {
 
   if (!isContentRelation(input.contentRelation)) {
     return "请选择有效的内容关系。";
+  }
+
+  if (
+    !Array.isArray(input.verifiedTools) ||
+    input.verifiedTools.length > 4 ||
+    input.verifiedTools.some((tool) => !isAiToolKey(tool)) ||
+    new Set(input.verifiedTools).size !== input.verifiedTools.length
+  ) {
+    return "已验证工具信息无效，请重新选择。";
   }
 
   if (
@@ -145,6 +160,9 @@ export async function publishPrompt(
     prompt: clean(rawInput?.prompt),
     sourceUrl: clean(rawInput?.sourceUrl),
     title: clean(rawInput?.title),
+    verifiedTools: Array.isArray(rawInput?.verifiedTools)
+      ? rawInput.verifiedTools
+      : [],
   };
   const error = invalidInput(input, user.id);
 
@@ -171,6 +189,7 @@ export async function publishPrompt(
       p_slug: slug,
       p_source_url: input.sourceUrl,
       p_title: input.title,
+      p_tool_keys: normalizeAiToolKeys(input.verifiedTools),
     },
   );
 
