@@ -2,6 +2,10 @@
 
 import { updateTag } from "next/cache";
 
+import {
+  isContentRelation,
+  type ContentRelation,
+} from "@/lib/content/relation";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_PROMPT_IMAGES } from "@/lib/uploads/constraints";
@@ -22,6 +26,7 @@ export interface PublishPromptImageInput {
 export interface PublishPromptInput {
   authorName: string;
   authorUrl: string;
+  contentRelation: ContentRelation;
   images: PublishPromptImageInput[];
   isNsfw: boolean;
   prompt: string;
@@ -66,6 +71,10 @@ function invalidInput(input: PublishPromptInput, userId: string) {
 
   if (!validHttpUrl(input.sourceUrl)) {
     return "请输入有效的来源链接（需要以 http:// 或 https:// 开头）。";
+  }
+
+  if (!isContentRelation(input.contentRelation)) {
+    return "请选择有效的内容关系。";
   }
 
   if (
@@ -130,6 +139,7 @@ export async function publishPrompt(
   const input: PublishPromptInput = {
     authorName: clean(rawInput?.authorName),
     authorUrl: clean(rawInput?.authorUrl),
+    contentRelation: rawInput.contentRelation,
     images: Array.isArray(rawInput?.images) ? rawInput.images : [],
     isNsfw: rawInput?.isNsfw === true,
     prompt: clean(rawInput?.prompt),
@@ -148,6 +158,7 @@ export async function publishPrompt(
     {
       p_author_name: input.authorName,
       p_author_url: input.authorUrl,
+      p_content_relation: input.contentRelation,
       p_images: input.images.map((image) => ({
         alt: image.alt,
         height: image.height,

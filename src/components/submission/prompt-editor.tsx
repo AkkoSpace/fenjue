@@ -12,6 +12,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { ContentRelationSelector } from "@/components/submission/content-relation-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -20,6 +21,7 @@ import {
   publishPrompt,
   type PublishPromptImageInput,
 } from "@/lib/content/actions";
+import type { ContentRelation } from "@/lib/content/relation";
 import {
   isSupportedImageType,
   MAX_IMAGE_BYTES,
@@ -82,6 +84,8 @@ export function PromptEditor({ defaultAuthorName }: PromptEditorProps) {
   const [prompt, setPrompt] = useState("");
   const [authorName, setAuthorName] = useState(defaultAuthorName);
   const [authorUrl, setAuthorUrl] = useState("");
+  const [contentRelation, setContentRelation] =
+    useState<ContentRelation>("repost");
   const [sourceUrl, setSourceUrl] = useState("");
   const [images, setImages] = useState<EditorImage[]>([]);
   const [isNsfw, setIsNsfw] = useState(false);
@@ -231,6 +235,7 @@ export function PromptEditor({ defaultAuthorName }: PromptEditorProps) {
       const result = await publishPrompt({
         authorName,
         authorUrl,
+        contentRelation,
         images: imageInputs,
         isNsfw,
         prompt,
@@ -357,6 +362,12 @@ export function PromptEditor({ defaultAuthorName }: PromptEditorProps) {
                   value={sourceUrl}
                 />
               </div>
+
+              <ContentRelationSelector
+                disabled={isPublishing}
+                onChange={setContentRelation}
+                value={contentRelation}
+              />
             </div>
           </section>
         </div>

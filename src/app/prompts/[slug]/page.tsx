@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { PromptCopyButton } from "@/components/prompt-copy-button";
 import { PromptGallery } from "@/components/prompt-gallery";
 import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
+import { getContentRelationOption } from "@/lib/content/relation";
 import { getPromptBySlug } from "@/lib/content/queries";
 
 export const instant = false;
@@ -37,6 +38,8 @@ export default async function PromptPage({ params }: PromptPageProps) {
   if (!entry) {
     notFound();
   }
+
+  const contentRelation = getContentRelationOption(entry.contentRelation);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-7 sm:px-8 sm:pt-9">
@@ -80,6 +83,12 @@ export default async function PromptPage({ params }: PromptPageProps) {
           <aside className="border-t border-border/80 pt-5 text-sm text-muted-foreground lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
             <p className="mb-2 text-xs font-medium tracking-[0.18em] uppercase">
               作者与来源
+            </p>
+            <p className="mb-2 flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">内容关系</span>
+              <span className="border border-border px-1.5 py-0.5 font-medium text-foreground">
+                {contentRelation.label}
+              </span>
             </p>
             <a
               className="flex min-h-11 items-center underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"

@@ -3,6 +3,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 
+import type { ContentRelation } from "@/lib/content/relation";
 import type { PromptEntryData, PromptImage } from "@/lib/content/types";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
@@ -17,6 +18,7 @@ interface PromptImageRow {
 interface PromptRow {
   author_name: string;
   author_url: string;
+  content_relation: ContentRelation;
   is_nsfw: boolean;
   prompt: string;
   prompt_images: PromptImageRow[];
@@ -67,7 +69,7 @@ export async function getPrompts(): Promise<PromptEntryData[]> {
   const { data, error } = await supabase
     .from("prompts")
     .select(
-      "slug,title,prompt,author_name,author_url,source_url,is_nsfw,prompt_images(position,object_key,alt,width,height)",
+      "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,prompt_images(position,object_key,alt,width,height)",
     )
     .eq("published", true)
     .order("published_at", { ascending: false });
@@ -82,6 +84,7 @@ export async function getPrompts(): Promise<PromptEntryData[]> {
       name: row.author_name,
       url: row.author_url,
     },
+    contentRelation: row.content_relation,
     images: [...row.prompt_images]
       .sort((a, b) => a.position - b.position)
       .map((image) => r2Image(r2BaseUrl, image.object_key, image)),

@@ -1,3 +1,5 @@
+import type { ContentRelation } from "@/lib/content/relation";
+
 export interface PromptImage {
   alt: string;
   height: number;
@@ -13,6 +15,7 @@ export interface PromptAuthor {
 
 export interface PromptEntryData {
   author: PromptAuthor;
+  contentRelation: ContentRelation;
   images: PromptImage[];
   isNsfw: boolean;
   prompt: string;

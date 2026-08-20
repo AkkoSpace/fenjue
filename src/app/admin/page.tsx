@@ -25,6 +25,7 @@ import {
   type AdminPromptStatus,
   getAdminPrompts,
 } from "@/lib/admin/queries";
+import { getContentRelationOption } from "@/lib/content/relation";
 import { hasR2WriteConfig } from "@/lib/r2/server";
 import { cn } from "@/lib/utils";
 
@@ -306,7 +307,8 @@ async function AdminContent({ searchParams }: AdminPageProps) {
                     {prompt.authorName}
                   </p>
                   <p className="mt-1 truncate text-xs text-muted-foreground/80">
-                    {prompt.slug}{prompt.isNsfw ? " · NSFW" : ""}
+                    {prompt.slug} · {getContentRelationOption(prompt.contentRelation).label}
+                    {prompt.isNsfw ? " · NSFW" : ""}
                   </p>
                 </div>
 

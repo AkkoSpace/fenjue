@@ -1,6 +1,7 @@
 import "server-only";
 
 import { requireAdmin } from "@/lib/auth/authorization";
+import type { ContentRelation } from "@/lib/content/relation";
 
 const PAGE_SIZE = 20;
 const MAX_SEARCH_LENGTH = 80;
@@ -17,6 +18,7 @@ interface PromptImageRow {
 
 interface PromptAdminRow {
   author_name: string;
+  content_relation: ContentRelation;
   created_at: string;
   id: string;
   is_nsfw: boolean;
@@ -37,6 +39,7 @@ export interface AdminPromptListItem {
     width: number;
   };
   createdAt: string;
+  contentRelation: ContentRelation;
   id: string;
   imageCount: number;
   isNsfw: boolean;
@@ -89,7 +92,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
   let listQuery = supabase
     .from("prompts")
     .select(
-      "id,slug,title,author_name,source_url,is_nsfw,published,published_at,created_at,prompt_images(position,object_key,alt,width,height)",
+      "id,slug,title,author_name,source_url,is_nsfw,content_relation,published,published_at,created_at,prompt_images(position,object_key,alt,width,height)",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
@@ -163,6 +166,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
             }
           : undefined,
       createdAt: row.created_at,
+      contentRelation: row.content_relation,
       id: row.id,
       imageCount: images.length,
       isNsfw: row.is_nsfw,
