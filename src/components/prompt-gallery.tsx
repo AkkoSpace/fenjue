@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import { PromptCarousel } from "@/components/prompt-carousel";
 import { cn } from "@/lib/utils";
 import type { PromptImage } from "@/lib/content/types";
 
@@ -16,7 +17,6 @@ export function PromptGallery({
 }: PromptGalleryProps) {
   const coverImage = images[0];
   const displayedImages = coverOnly ? images.slice(0, 1) : images;
-  const hasMultipleImages = displayedImages.length > 1;
 
   if (coverOnly && coverImage?.src) {
     const stackedImages = images.slice(1, 3);
@@ -67,18 +67,17 @@ export function PromptGallery({
     );
   }
 
+  const detailImages = displayedImages.filter(
+    (image): image is PromptImage & { src: string } => Boolean(image.src),
+  );
+
+  if (detailImages.length > 1) {
+    return <PromptCarousel images={detailImages} title={title} />;
+  }
+
   return (
-    <div
-      className={cn(
-        hasMultipleImages
-          ? "-mx-5 flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 [scrollbar-width:none] sm:mx-0 sm:grid sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
-          : "grid grid-cols-1",
-        images.length === 2 && "sm:grid-cols-2",
-        images.length >= 3 && "sm:grid-cols-3",
-      )}
-      aria-label={`${title}图片`}
-    >
-      {displayedImages.map((image, index) => {
+    <div className="grid grid-cols-1" aria-label={`${title}图片`}>
+      {detailImages.map((image, index) => {
         if (!image.src) {
           return null;
         }
@@ -86,11 +85,7 @@ export function PromptGallery({
         return (
           <figure
             key={`${image.src}-${index}`}
-            className={cn(
-              "relative overflow-hidden bg-muted",
-              hasMultipleImages &&
-                "w-[82vw] max-w-[22rem] shrink-0 snap-start sm:w-auto sm:max-w-none",
-            )}
+            className="relative overflow-hidden bg-muted"
             style={{ aspectRatio: `${image.width} / ${image.height}` }}
           >
             <Image
@@ -98,11 +93,7 @@ export function PromptGallery({
               alt={image.alt}
               fill
               priority={index === 0}
-              sizes={
-                images.length > 1
-                  ? "(max-width: 639px) 82vw, (max-width: 1439px) 33vw, 460px"
-                  : "(max-width: 1439px) calc(100vw - 40px), 1376px"
-              }
+              sizes="(max-width: 1439px) calc(100vw - 40px), 1376px"
               className="object-cover transition-transform duration-500 ease-out hover:scale-[1.01] motion-reduce:transition-none"
             />
           </figure>
