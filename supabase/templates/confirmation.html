@@ -5,7 +5,11 @@
       <div style="margin-bottom:32px;font-family:'Songti SC','SimSun',serif;font-size:24px;">焚诀</div>
       <h1 style="margin:0 0 16px;font-family:'Songti SC','SimSun',serif;font-size:28px;font-weight:600;line-height:1.35;">确认你的邮箱</h1>
       <p style="margin:0 0 28px;color:#6e665f;font-size:15px;line-height:1.8;">完成验证后即可登录焚诀。访客浏览和复制提示词始终不需要登录。</p>
-      <a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&amp;type=signup&amp;next=/account" style="display:inline-block;background:#9b3b2c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:4px;font-size:15px;">确认邮箱</a>
+      <a href="{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=signup" style="display:inline-block;background:#9b3b2c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:4px;font-size:15px;">确认邮箱</a>
+      <div style="margin:24px 0 0;color:#6e665f;font-size:13px;line-height:1.7;">
+        <p style="margin:0 0 8px;">如果按钮无法打开，请复制下面的完整地址到浏览器：</p>
+        <a href="{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=signup" style="color:#9b3b2c;word-break:break-all;">{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=signup</a>
+      </div>
       <p style="margin:32px 0 0;border-top:1px solid #ddd5ca;padding-top:20px;color:#817970;font-size:12px;line-height:1.7;">如果你没有创建焚诀账户，可以忽略这封邮件。</p>
     </div>
   </body>

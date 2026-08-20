@@ -75,7 +75,9 @@ SMTP 是部署外配置，因此仓库不会假装它已经生效。上线验收
 - 邮箱确认：`supabase/templates/confirmation.html`
 - 密码重置：`supabase/templates/recovery.html`
 
-将模板内容分别粘贴到 Supabase 的 Confirm signup 和 Reset password 邮件模板。模板必须保留 `{{ .SiteURL }}` 与 `{{ .TokenHash }}`，由应用服务端验证一次性令牌；不要改回依赖原浏览器 PKCE Cookie 的 `{{ .ConfirmationURL }}`。
+将模板内容分别粘贴到 Supabase 的 Confirm signup 和 Reset password 邮件模板。模板必须保留 `{{ .RedirectTo }}` 与 `{{ .TokenHash }}`：`RedirectTo` 来自应用注册或找回密码时传入的站点回调地址，生产环境读取 `NEXT_PUBLIC_SITE_URL`，本地开发使用 `http://localhost:42486`。Supabase 的 Redirect URLs 必须同时允许这些地址。
+
+按钮与其下方的可复制地址使用同一个一次性 `token_hash`，由应用服务端验证；不要改回依赖原浏览器 PKCE Cookie 的 `{{ .ConfirmationURL }}`。仓库中的模板不会自动同步到托管的 Supabase 项目，每次修改后都要重新粘贴并保存对应的 Dashboard 邮件模板。
 
 建议邮件主题分别使用：
 
