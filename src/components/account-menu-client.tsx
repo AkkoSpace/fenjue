@@ -98,7 +98,7 @@ function AccountLinks({ isAdmin }: Pick<AccountMenuClientProps, "isAdmin">) {
       <AccountLink code="ACCOUNT" href="/account" icon={UserRound} label="我的账户" />
       <AccountLink code="SUBMIT" href="/submit" icon={Upload} label="发布作品" />
       {isAdmin ? (
-        <AccountLink code="ADMIN" href="/admin" icon={ShieldCheck} label="内容管理" />
+        <AccountLink code="ADMIN" href="/admin" icon={ShieldCheck} label="管理后台" />
       ) : null}
     </div>
   );
