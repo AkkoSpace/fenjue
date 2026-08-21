@@ -27,6 +27,7 @@ npm run dev
 认证、通用 SMTP、Resend 和邮件模板配置见 [`docs/AUTH.md`](docs/AUTH.md)。
 作品上传、R2 服务端凭据、CORS 和 Supabase 迁移见 [`docs/UPLOADS.md`](docs/UPLOADS.md)。
 管理员授权、内容管理和永久删除边界见 [`docs/ADMIN.md`](docs/ADMIN.md)。
+可信数据集的幂等导入、R2 转存与异常记录边界见 [`docs/IMPORTS.md`](docs/IMPORTS.md)。
 
 ## 校验
 
