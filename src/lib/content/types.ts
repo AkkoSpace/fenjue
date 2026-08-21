@@ -1,5 +1,9 @@
 import type { AiToolKey } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
+import type {
+  TaxonomyCategory,
+  TaxonomyTag,
+} from "@/lib/content/taxonomy";
 
 export interface PromptImage {
   alt: string;
@@ -16,12 +20,14 @@ export interface PromptAuthor {
 
 export interface PromptEntryData {
   author: PromptAuthor;
+  category: TaxonomyCategory;
   contentRelation: ContentRelation;
   images: PromptImage[];
   isNsfw: boolean;
   prompt: string;
   slug: string;
   sourceUrl: string;
+  tags: TaxonomyTag[];
   title: string;
   verifiedTools: AiToolKey[];
 }

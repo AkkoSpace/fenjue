@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { ContentRelationSelector } from "@/components/submission/content-relation-selector";
+import { TaxonomySelector } from "@/components/submission/taxonomy-selector";
 import { VerifiedToolsSelector } from "@/components/submission/verified-tools-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,10 @@ import {
 } from "@/lib/content/actions";
 import type { AiToolKey } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
+import type {
+  TaxonomyCategory,
+  TaxonomyTag,
+} from "@/lib/content/taxonomy";
 import {
   isSupportedImageType,
   MAX_IMAGE_BYTES,
@@ -31,7 +36,9 @@ import {
 } from "@/lib/uploads/constraints";
 
 interface PromptEditorProps {
+  categories: TaxonomyCategory[];
   defaultAuthorName: string;
+  tags: TaxonomyTag[];
 }
 
 interface UploadedImage {
@@ -79,15 +86,21 @@ function labelClassName() {
   return "block text-sm font-medium text-foreground";
 }
 
-export function PromptEditor({ defaultAuthorName }: PromptEditorProps) {
+export function PromptEditor({
+  categories,
+  defaultAuthorName,
+  tags,
+}: PromptEditorProps) {
   const router = useRouter();
   const imagesRef = useRef<EditorImage[]>([]);
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
   const [authorName, setAuthorName] = useState(defaultAuthorName);
   const [authorUrl, setAuthorUrl] = useState("");
+  const [categoryKey, setCategoryKey] = useState("");
   const [contentRelation, setContentRelation] =
     useState<ContentRelation>("repost");
+  const [tagKeys, setTagKeys] = useState<string[]>([]);
   const [verifiedTools, setVerifiedTools] = useState<AiToolKey[]>([]);
   const [sourceUrl, setSourceUrl] = useState("");
   const [images, setImages] = useState<EditorImage[]>([]);
@@ -221,6 +234,16 @@ export function PromptEditor({ defaultAuthorName }: PromptEditorProps) {
       return;
     }
 
+    if (!categoryKey) {
+      setError("请选择作品的主分类。");
+      return;
+    }
+
+    if (tagKeys.length === 0) {
+      setError("请至少选择一个标签。");
+      return;
+    }
+
     setIsPublishing(true);
     setUploadedCount(images.filter((image) => image.uploaded).length);
 
@@ -238,11 +261,13 @@ export function PromptEditor({ defaultAuthorName }: PromptEditorProps) {
       const result = await publishPrompt({
         authorName,
         authorUrl,
+        categoryKey,
         contentRelation,
         images: imageInputs,
         isNsfw,
         prompt,
         sourceUrl,
+        tagKeys,
         title,
         verifiedTools,
       });
@@ -293,6 +318,16 @@ export function PromptEditor({ defaultAuthorName }: PromptEditorProps) {
                   value={title}
                 />
               </div>
+
+              <TaxonomySelector
+                categories={categories}
+                categoryKey={categoryKey}
+                disabled={isPublishing}
+                onCategoryChange={setCategoryKey}
+                onTagKeysChange={setTagKeys}
+                tagKeys={tagKeys}
+                tags={tags}
+              />
 
               <div className={fieldClassName()}>
                 <label className={labelClassName()} htmlFor="prompt">

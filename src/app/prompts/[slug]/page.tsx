@@ -1,5 +1,5 @@
 import { ArrowLeft, ExternalLink } from "lucide-react";
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -28,7 +28,7 @@ export async function generateMetadata({
 
   return {
     title: `${entry.title} · 焚诀`,
-    description: `查看“${entry.title}”的完整文生图提示词。`,
+    description: `查看“${entry.title}”的完整文生图提示词、${entry.category.name}分类与相关标签。`,
   };
 }
 
@@ -91,8 +91,28 @@ export default async function PromptPage({ params }: PromptPageProps) {
                 {contentRelation.label}
               </span>
             </p>
+            <div className="mb-3 border-y border-border/70 py-3">
+              <p className="text-xs text-muted-foreground">分类与标签</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <Link
+                  className="inline-flex min-h-9 items-center border border-primary/30 bg-primary/5 px-2 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  href={`/?category=${encodeURIComponent(entry.category.key)}` as Route}
+                >
+                  {entry.category.name}
+                </Link>
+                {entry.tags.map((tag) => (
+                  <Link
+                    className="inline-flex min-h-9 items-center border border-border px-2 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    href={`/?tag=${encodeURIComponent(tag.key)}` as Route}
+                    key={tag.key}
+                  >
+                    #{tag.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
             {entry.verifiedTools.length ? (
-              <div className="mb-3 border-y border-border/70 py-3">
+              <div className="mb-3 border-b border-border/70 pb-3">
                 <p className="text-xs text-muted-foreground">已验证工具</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {entry.verifiedTools.map((tool) => (

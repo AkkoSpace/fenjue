@@ -5,6 +5,7 @@
 ## 发布范围
 
 - 每组作品需要标题、完整提示词、作者名称与链接、来源链接。
+- 每组作品必须选择一个主分类，并从受控词表选择 1-6 个标签；分类用于一级发现，标签用于风格、形式和主题交叉检索。
 - 每组作品必须标记为原创、转载或改编；已有网络收集内容默认记为转载。
 - 每组作品可以多选实际生成或验证过的工具；未验证时留空，不把“可能可用”标记为“已验证”。
 - 每组作品支持 1-8 张 JPG、PNG、WebP 或 AVIF 图片。
@@ -49,7 +50,7 @@ R2_BUCKET_NAME=your_r2_bucket_name
 
 ## Supabase 迁移
 
-依次执行 `supabase/migrations/20260806000000_enable_user_submissions.sql`、`supabase/migrations/20260820023430_add_nsfw_prompts.sql`、`supabase/migrations/20260820030451_add_content_relation.sql` 和 `supabase/migrations/20260820080538_add_verified_ai_tools.sql`。它们会：
+依次执行 `supabase/migrations/20260806000000_enable_user_submissions.sql`、`supabase/migrations/20260820023430_add_nsfw_prompts.sql`、`supabase/migrations/20260820030451_add_content_relation.sql`、`supabase/migrations/20260820080538_add_verified_ai_tools.sql`、`supabase/migrations/20260821080000_add_categories_and_tags.sql` 和 `supabase/migrations/20260821090000_tighten_prompt_tag_policies.sql`。它们会：
 
 1. 给已有作品补充 `user_id`，优先归给最早创建的管理员账号。
 2. 允许登录用户创建自己的作品，作者只能读取、修改和删除自己的作品。
@@ -58,6 +59,8 @@ R2_BUCKET_NAME=your_r2_bucket_name
 5. 增加作品级 `is_nsfw` 标记，并为新上传函数保留旧签名兼容入口。
 6. 增加 `content_relation` 字段，已有内容默认为转载，并保留旧上传函数签名。
 7. 增加工具目录与作品—工具多对多关系，让一条作品可以点亮多个已验证工具。
+8. 增加单选主分类和多选标签目录，精确回填已有作品，并要求新作品选择 1-6 个有效标签。
+9. 将标签读取策略按匿名与已登录角色拆分，避免同一次查询重复评估多条宽松策略。
 
 迁移执行后，配置四个 R2 服务端变量并重启本地服务，再访问 `/submit` 进行首次真实上传。
 

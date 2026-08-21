@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { PromptEditor } from "@/components/submission/prompt-editor";
+import { getContentTaxonomy } from "@/lib/content/queries";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -39,11 +40,14 @@ async function SubmitContent() {
     redirect("/login?next=/submit");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [{ data: profile }, taxonomy] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+    getContentTaxonomy(),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
@@ -60,9 +64,11 @@ async function SubmitContent() {
       </div>
 
       <PromptEditor
+        categories={taxonomy.categories}
         defaultAuthorName={
-          profile?.display_name || user.user_metadata.display_name || ""
+          profile?.display_name || user.user_metadata?.display_name || ""
         }
+        tags={taxonomy.tags}
       />
     </main>
   );

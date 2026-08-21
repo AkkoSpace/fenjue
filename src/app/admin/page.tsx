@@ -308,7 +308,10 @@ async function AdminContent({ searchParams }: AdminPageProps) {
                     {prompt.authorName}
                   </p>
                   <p className="mt-1 truncate text-xs text-muted-foreground/80">
-                    {prompt.slug} · {getContentRelationOption(prompt.contentRelation).label}
+                    {prompt.slug} · {getContentRelationOption(prompt.contentRelation).label} · {prompt.category.name}
+                    {prompt.tags.length
+                      ? ` · ${prompt.tags.map((tag) => `#${tag.name}`).join(" ")}`
+                      : ""}
                     {prompt.verifiedTools.length
                       ? ` · ${prompt.verifiedTools
                           .map((tool) => getAiToolOption(tool).label)

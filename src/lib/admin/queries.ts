@@ -6,6 +6,11 @@ import {
   type AiToolKey,
 } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
+import type {
+  TaxonomyCategory,
+  TaxonomyTag,
+  TaxonomyTagKind,
+} from "@/lib/content/taxonomy";
 
 const PAGE_SIZE = 20;
 const MAX_SEARCH_LENGTH = 80;
@@ -22,12 +27,34 @@ interface PromptImageRow {
 
 interface PromptAdminRow {
   author_name: string;
+  category: {
+    key: string;
+    name: string;
+    sort_order: number;
+  } | {
+    key: string;
+    name: string;
+    sort_order: number;
+  }[];
   content_relation: ContentRelation;
   created_at: string;
   id: string;
   is_nsfw: boolean;
   prompt_images: PromptImageRow[];
   prompt_ai_tools: { tool_key: AiToolKey }[];
+  prompt_tags: {
+    tag: {
+      key: string;
+      kind: TaxonomyTagKind;
+      name: string;
+      sort_order: number;
+    } | {
+      key: string;
+      kind: TaxonomyTagKind;
+      name: string;
+      sort_order: number;
+    }[];
+  }[];
   published: boolean;
   published_at: string | null;
   slug: string;
@@ -37,6 +64,7 @@ interface PromptAdminRow {
 
 export interface AdminPromptListItem {
   authorName: string;
+  category: TaxonomyCategory;
   cover?: {
     alt: string;
     height: number;
@@ -52,6 +80,7 @@ export interface AdminPromptListItem {
   publishedAt: string | null;
   slug: string;
   sourceUrl: string;
+  tags: TaxonomyTag[];
   title: string;
   verifiedTools: AiToolKey[];
 }
@@ -98,7 +127,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
   let listQuery = supabase
     .from("prompts")
     .select(
-      "id,slug,title,author_name,source_url,is_nsfw,content_relation,published,published_at,created_at,prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key)",
+      "id,slug,title,author_name,source_url,is_nsfw,content_relation,published,published_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
@@ -152,7 +181,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
     };
   }
 
-  const rows = (listResult.data ?? []) as PromptAdminRow[];
+  const rows = (listResult.data ?? []) as unknown as PromptAdminRow[];
   const items = rows.map((row): AdminPromptListItem => {
     const images = [...row.prompt_images].sort(
       (left, right) => left.position - right.position,
@@ -160,8 +189,21 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
     const firstImage = images[0];
     const src = firstImage ? publicImageUrl(firstImage.object_key) : undefined;
 
+    const category = Array.isArray(row.category)
+      ? row.category[0]
+      : row.category;
+
+    if (!category) {
+      throw new Error("Admin prompt category is missing");
+    }
+
     return {
       authorName: row.author_name,
+      category: {
+        key: category.key,
+        name: category.name,
+        sortOrder: category.sort_order,
+      },
       cover:
         firstImage && src
           ? {
@@ -180,6 +222,22 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
       publishedAt: row.published_at,
       slug: row.slug,
       sourceUrl: row.source_url,
+      tags: row.prompt_tags
+        .map(({ tag }) => {
+          const normalizedTag = Array.isArray(tag) ? tag[0] : tag;
+
+          if (!normalizedTag) {
+            throw new Error("Admin prompt tag is missing");
+          }
+
+          return {
+            key: normalizedTag.key,
+            kind: normalizedTag.kind,
+            name: normalizedTag.name,
+            sortOrder: normalizedTag.sort_order,
+          };
+        })
+        .sort((left, right) => left.sortOrder - right.sortOrder),
       title: row.title,
       verifiedTools: normalizeAiToolKeys(
         row.prompt_ai_tools.map((tool) => tool.tool_key),

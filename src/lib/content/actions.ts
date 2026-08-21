@@ -11,6 +11,11 @@ import {
   isContentRelation,
   type ContentRelation,
 } from "@/lib/content/relation";
+import {
+  isTaxonomyKey,
+  MAX_PROMPT_TAGS,
+  normalizeTaxonomyKeys,
+} from "@/lib/content/taxonomy";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_PROMPT_IMAGES } from "@/lib/uploads/constraints";
@@ -31,11 +36,13 @@ export interface PublishPromptImageInput {
 export interface PublishPromptInput {
   authorName: string;
   authorUrl: string;
+  categoryKey: string;
   contentRelation: ContentRelation;
   images: PublishPromptImageInput[];
   isNsfw: boolean;
   prompt: string;
   sourceUrl: string;
+  tagKeys: string[];
   title: string;
   verifiedTools: AiToolKey[];
 }
@@ -81,6 +88,20 @@ function invalidInput(input: PublishPromptInput, userId: string) {
 
   if (!isContentRelation(input.contentRelation)) {
     return "请选择有效的内容关系。";
+  }
+
+  if (!isTaxonomyKey(input.categoryKey)) {
+    return "请选择作品的主分类。";
+  }
+
+  if (
+    !Array.isArray(input.tagKeys) ||
+    input.tagKeys.length < 1 ||
+    input.tagKeys.length > MAX_PROMPT_TAGS ||
+    input.tagKeys.some((tag) => !isTaxonomyKey(tag)) ||
+    new Set(input.tagKeys).size !== input.tagKeys.length
+  ) {
+    return `请选择 1-${MAX_PROMPT_TAGS} 个有效标签。`;
   }
 
   if (
@@ -154,11 +175,13 @@ export async function publishPrompt(
   const input: PublishPromptInput = {
     authorName: clean(rawInput?.authorName),
     authorUrl: clean(rawInput?.authorUrl),
+    categoryKey: clean(rawInput?.categoryKey),
     contentRelation: rawInput.contentRelation,
     images: Array.isArray(rawInput?.images) ? rawInput.images : [],
     isNsfw: rawInput?.isNsfw === true,
     prompt: clean(rawInput?.prompt),
     sourceUrl: clean(rawInput?.sourceUrl),
+    tagKeys: Array.isArray(rawInput?.tagKeys) ? rawInput.tagKeys : [],
     title: clean(rawInput?.title),
     verifiedTools: Array.isArray(rawInput?.verifiedTools)
       ? rawInput.verifiedTools
@@ -176,6 +199,7 @@ export async function publishPrompt(
     {
       p_author_name: input.authorName,
       p_author_url: input.authorUrl,
+      p_category_key: input.categoryKey,
       p_content_relation: input.contentRelation,
       p_images: input.images.map((image) => ({
         alt: image.alt,
@@ -188,6 +212,7 @@ export async function publishPrompt(
       p_prompt: input.prompt,
       p_slug: slug,
       p_source_url: input.sourceUrl,
+      p_tag_keys: normalizeTaxonomyKeys(input.tagKeys),
       p_title: input.title,
       p_tool_keys: normalizeAiToolKeys(input.verifiedTools),
     },
