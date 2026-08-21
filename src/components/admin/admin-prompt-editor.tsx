@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   ArrowRight,
+  ExternalLink,
   ImagePlus,
   LoaderCircle,
   RotateCcw,
@@ -109,6 +110,9 @@ export function AdminPromptEditor({
   const [verifiedTools, setVerifiedTools] =
     useState<AiToolKey[]>(initial.verifiedTools);
   const [images, setImages] = useState(() => initialImages(initial));
+  const [selectedImageId, setSelectedImageId] = useState(
+    () => initial.images[0]?.id ?? "",
+  );
   const [removed, setRemoved] = useState<RemovedImage[]>([]);
   const [isNsfw, setIsNsfw] = useState(initial.isNsfw);
   const [error, setError] = useState("");
@@ -160,6 +164,7 @@ export function AdminPromptEditor({
         }),
       );
       setImages((current) => [...current, ...additions]);
+      setSelectedImageId(additions[0].id);
       setError("");
     } catch {
       setError("有图片无法读取，请更换文件后重试。 ");
@@ -167,29 +172,33 @@ export function AdminPromptEditor({
   }
 
   function removeImage(index: number) {
-    setImages((current) => {
-      const image = current[index];
-      if (!image) return current;
-      if (current.length === 1) {
-        setError("作品至少需要保留一张图片。 ");
-        return current;
-      }
-      setRemoved((items) => [...items, { image, index }]);
-      return current.filter((_, currentIndex) => currentIndex !== index);
-    });
+    const image = images[index];
+    if (!image) return;
+    if (images.length === 1) {
+      setError("作品至少需要保留一张图片。 ");
+      return;
+    }
+
+    const nextSelectedImage = images[index + 1] ?? images[index - 1];
+    setRemoved((items) => [...items, { image, index }]);
+    setImages((current) =>
+      current.filter((_, currentIndex) => currentIndex !== index),
+    );
+    if (image.id === selectedImageId && nextSelectedImage) {
+      setSelectedImageId(nextSelectedImage.id);
+    }
   }
 
   function undoLastRemoval() {
-    setRemoved((current) => {
-      const last = current.at(-1);
-      if (!last) return current;
-      setImages((items) => {
-        const next = [...items];
-        next.splice(Math.min(last.index, next.length), 0, last.image);
-        return next;
-      });
-      return current.slice(0, -1);
+    const last = removed.at(-1);
+    if (!last) return;
+    setImages((items) => {
+      const next = [...items];
+      next.splice(Math.min(last.index, next.length), 0, last.image);
+      return next;
     });
+    setSelectedImageId(last.image.id);
+    setRemoved((current) => current.slice(0, -1));
     setError("");
   }
 
@@ -300,6 +309,12 @@ export function AdminPromptEditor({
     }
   }
 
+  const selectedImageIndex = Math.max(
+    0,
+    images.findIndex((image) => image.id === selectedImageId),
+  );
+  const selectedImage = images[selectedImageIndex];
+
   return (
     <form className="mt-8" onSubmit={handleSubmit}>
       <div className="grid items-start gap-10 xl:grid-cols-[minmax(0,0.9fr)_minmax(24rem,0.68fr)] xl:gap-14">
@@ -369,27 +384,145 @@ export function AdminPromptEditor({
             type="file"
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            {images.map((image, index) => (
-              <figure className="min-w-0 border border-border/80 bg-background" key={image.id}>
-                <div className="relative overflow-hidden bg-muted" style={{ aspectRatio: `${image.width} / ${image.height}` }}>
-                  <Image alt={image.alt || `作品图片 ${index + 1}`} className="object-cover" fill sizes="(max-width: 1279px) 50vw, 240px" src={image.previewUrl} unoptimized={Boolean(image.file)} />
-                  <span className="absolute left-2 top-2 bg-foreground/85 px-1.5 py-0.5 text-[0.6875rem] text-background">{index === 0 ? "封面" : index + 1}</span>
+          {selectedImage ? (
+            <figure>
+              <div
+                className="relative grid min-h-72 place-items-center overflow-hidden border border-border/80 bg-muted/35 sm:min-h-96"
+                style={{ aspectRatio: "4 / 3" }}
+              >
+                <Image
+                  alt={selectedImage.alt || `作品图片 ${selectedImageIndex + 1}`}
+                  className="object-contain"
+                  fill
+                  priority
+                  sizes="(max-width: 1279px) 100vw, 42vw"
+                  src={selectedImage.previewUrl}
+                  unoptimized={Boolean(selectedImage.file)}
+                />
+                <span className="absolute left-3 top-3 bg-foreground px-2 py-1 text-xs text-background">
+                  {selectedImageIndex === 0
+                    ? "封面"
+                    : `第 ${selectedImageIndex + 1} 张`}
+                </span>
+                <a
+                  className="absolute right-3 top-3 inline-flex min-h-11 items-center gap-1.5 border border-border bg-background px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  href={selectedImage.previewUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <ExternalLink aria-hidden="true" className="size-3.5" />
+                  查看原图
+                </a>
+              </div>
+              <figcaption className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <div className="space-y-2">
+                  <label
+                    className="text-xs font-medium text-muted-foreground"
+                    htmlFor={`image-alt-${selectedImage.id}`}
+                  >
+                    图片 {selectedImageIndex + 1} 替代文本
+                  </label>
+                  <Input
+                    id={`image-alt-${selectedImage.id}`}
+                    maxLength={240}
+                    onChange={(event) =>
+                      updateAlt(selectedImage.id, event.target.value)
+                    }
+                    placeholder="图片替代文本"
+                    value={selectedImage.alt}
+                  />
                 </div>
-                <figcaption className="p-2">
-                  <label className="sr-only" htmlFor={`image-alt-${image.id}`}>图片 {index + 1} 替代文本</label>
-                  <Input className="h-9 text-xs" id={`image-alt-${image.id}`} maxLength={240} onChange={(event) => updateAlt(image.id, event.target.value)} placeholder="图片替代文本" value={image.alt} />
-                  <div className="mt-1 flex justify-end">
-                    <Button aria-label="向前移动" className="size-11 sm:size-9" disabled={isSaving || index === 0} onClick={() => moveImage(index, -1)} size="icon-sm" title="向前移动" type="button" variant="ghost"><ArrowLeft aria-hidden="true" /></Button>
-                    <Button aria-label="向后移动" className="size-11 sm:size-9" disabled={isSaving || index === images.length - 1} onClick={() => moveImage(index, 1)} size="icon-sm" title="向后移动" type="button" variant="ghost"><ArrowRight aria-hidden="true" /></Button>
-                    <Button aria-label={`移除图片 ${index + 1}`} className="size-11 text-destructive sm:size-9" disabled={isSaving || images.length === 1} onClick={() => removeImage(index)} size="icon-sm" title="移除图片" type="button" variant="ghost"><Trash2 aria-hidden="true" /></Button>
-                  </div>
-                </figcaption>
-              </figure>
-            ))}
+                <div className="flex justify-end border border-border bg-background">
+                  <Button
+                    aria-label="向前移动"
+                    className="size-11 rounded-none"
+                    disabled={isSaving || selectedImageIndex === 0}
+                    onClick={() => moveImage(selectedImageIndex, -1)}
+                    size="icon-sm"
+                    title="向前移动"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ArrowLeft aria-hidden="true" />
+                  </Button>
+                  <Button
+                    aria-label="向后移动"
+                    className="size-11 rounded-none border-l border-border"
+                    disabled={
+                      isSaving || selectedImageIndex === images.length - 1
+                    }
+                    onClick={() => moveImage(selectedImageIndex, 1)}
+                    size="icon-sm"
+                    title="向后移动"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ArrowRight aria-hidden="true" />
+                  </Button>
+                  <Button
+                    aria-label={`移除图片 ${selectedImageIndex + 1}`}
+                    className="size-11 rounded-none border-l border-border text-destructive"
+                    disabled={isSaving || images.length === 1}
+                    onClick={() => removeImage(selectedImageIndex)}
+                    size="icon-sm"
+                    title="移除图片"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2 aria-hidden="true" />
+                  </Button>
+                </div>
+              </figcaption>
+            </figure>
+          ) : null}
+
+          <div className="mt-5 grid grid-cols-4 gap-2 sm:grid-cols-6 xl:grid-cols-4 2xl:grid-cols-6">
+            {images.map((image, index) => {
+              const selected = image.id === selectedImage?.id;
+              return (
+                <button
+                  aria-label={`查看图片 ${index + 1}`}
+                  aria-pressed={selected}
+                  className="group relative min-h-16 overflow-hidden border bg-muted outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-primary aria-pressed:ring-1 aria-pressed:ring-primary"
+                  key={image.id}
+                  onClick={() => setSelectedImageId(image.id)}
+                  style={{ aspectRatio: "1 / 1" }}
+                  type="button"
+                >
+                  <Image
+                    alt=""
+                    className="object-cover opacity-70 transition-opacity group-hover:opacity-100 group-aria-pressed:opacity-100"
+                    fill
+                    sizes="120px"
+                    src={image.previewUrl}
+                    unoptimized={Boolean(image.file)}
+                  />
+                  <span className="absolute bottom-1.5 left-1.5 bg-foreground/90 px-1.5 py-0.5 text-[0.6875rem] text-background">
+                    {index === 0 ? "封面" : index + 1}
+                  </span>
+                </button>
+              );
+            })}
             {images.length < MAX_PROMPT_IMAGES ? (
-              <label className="grid min-h-40 cursor-pointer place-items-center border border-dashed border-border text-center text-muted-foreground transition-colors hover:border-primary/60 hover:text-primary" htmlFor="admin-prompt-images">
-                <span className="flex flex-col items-center gap-2 text-xs"><ImagePlus aria-hidden="true" className="size-5" />添加图片</span>
+              <label
+                aria-disabled={isSaving}
+                className="grid min-h-16 cursor-pointer place-items-center border border-dashed border-border text-center text-muted-foreground outline-none transition-colors hover:border-primary/60 hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                htmlFor="admin-prompt-images"
+                onKeyDown={(event) => {
+                  if (isSaving || (event.key !== "Enter" && event.key !== " ")) {
+                    return;
+                  }
+                  event.preventDefault();
+                  event.currentTarget.click();
+                }}
+                role="button"
+                style={{ aspectRatio: "1 / 1" }}
+                tabIndex={isSaving ? -1 : 0}
+              >
+                <span className="flex flex-col items-center gap-1.5 text-xs">
+                  <ImagePlus aria-hidden="true" className="size-5" />
+                  添加图片
+                </span>
               </label>
             ) : null}
           </div>
