@@ -1,5 +1,3 @@
-import { GitFork, Upload } from "lucide-react";
-import type { Route } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -21,24 +19,6 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span className="hidden sm:inline">卷一 · 文生图</span>
-          <Link
-            className="inline-flex min-h-11 items-center gap-2 border-l border-border/80 pl-4 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-            href={"/submit" as Route}
-          >
-            <Upload className="size-4" aria-hidden="true" />
-            <span className="hidden sm:inline">上传</span>
-            <span className="sr-only sm:hidden">上传作品</span>
-          </Link>
-          <a
-            className="inline-flex min-h-11 items-center gap-2 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-            href="https://github.com/AkkoSpace/fenjue"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <GitFork className="size-4" aria-hidden="true" />
-            <span className="hidden sm:inline">GitHub</span>
-            <span className="sr-only">在新窗口打开 GitHub 仓库</span>
-          </a>
           <Suspense fallback={<AccountMenuFallback />}>
             <AccountMenu />
           </Suspense>
