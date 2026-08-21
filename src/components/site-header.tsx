@@ -1,6 +1,9 @@
-import { GitFork, Upload, UserRound } from "lucide-react";
+import { GitFork, Upload } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+
+import { AccountMenu, AccountMenuFallback } from "@/components/account-menu";
 
 export function SiteHeader() {
   return (
@@ -26,14 +29,6 @@ export function SiteHeader() {
             <span className="hidden sm:inline">上传</span>
             <span className="sr-only sm:hidden">上传作品</span>
           </Link>
-          <Link
-            className="inline-flex min-h-11 items-center gap-2 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-            href="/account"
-          >
-            <UserRound className="size-4" aria-hidden="true" />
-            <span className="hidden sm:inline">账户</span>
-            <span className="sr-only sm:hidden">账户</span>
-          </Link>
           <a
             className="inline-flex min-h-11 items-center gap-2 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
             href="https://github.com/AkkoSpace/fenjue"
@@ -44,6 +39,9 @@ export function SiteHeader() {
             <span className="hidden sm:inline">GitHub</span>
             <span className="sr-only">在新窗口打开 GitHub 仓库</span>
           </a>
+          <Suspense fallback={<AccountMenuFallback />}>
+            <AccountMenu />
+          </Suspense>
         </div>
       </div>
     </header>
