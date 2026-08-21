@@ -6,10 +6,11 @@ import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
 import type { PromptCardData } from "@/lib/content/types";
 
 interface PromptEntryProps {
+  eager?: boolean;
   entry: PromptCardData;
 }
 
-export function PromptEntry({ entry }: PromptEntryProps) {
+export function PromptEntry({ eager = false, entry }: PromptEntryProps) {
   const detailHref = `/prompts/${entry.slug}` as Route;
   const detailLabel = `查看${entry.title}${
     entry.images.length > 1 ? `，共 ${entry.images.length} 张图片` : ""
@@ -19,15 +20,26 @@ export function PromptEntry({ entry }: PromptEntryProps) {
     <article className="group mb-9 break-inside-avoid sm:mb-11">
       {entry.isNsfw ? (
         <SensitiveImageGuard detailHref={detailHref} title={entry.title}>
-          <PromptGallery coverOnly images={entry.images} title={entry.title} />
+          <PromptGallery
+            coverOnly
+            eager={eager}
+            images={entry.images}
+            title={entry.title}
+          />
         </SensitiveImageGuard>
       ) : (
         <Link
           aria-label={detailLabel}
           className="block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
           href={detailHref}
+          prefetch={false}
         >
-          <PromptGallery coverOnly images={entry.images} title={entry.title} />
+          <PromptGallery
+            coverOnly
+            eager={eager}
+            images={entry.images}
+            title={entry.title}
+          />
         </Link>
       )}
 
@@ -36,6 +48,7 @@ export function PromptEntry({ entry }: PromptEntryProps) {
           aria-label={detailLabel}
           className="min-w-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
           href={detailHref}
+          prefetch={false}
         >
           <h2 className="font-serif text-xl leading-snug text-foreground transition-colors group-hover:text-primary sm:text-2xl">
             {entry.title}

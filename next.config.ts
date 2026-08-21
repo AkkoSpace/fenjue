@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   typedRoutes: true,
   images: {
+    minimumCacheTTL: 31_536_000,
     remotePatterns: r2PublicBaseUrl
       ? [new URL(`${r2PublicBaseUrl}/**`)]
       : [],

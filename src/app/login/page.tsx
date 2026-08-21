@@ -10,7 +10,8 @@ import { resendConfirmation, signIn } from "@/lib/auth/actions";
 import { type AuthPageProps, getAuthPageState } from "@/lib/auth/page";
 
 export const metadata: Metadata = {
-  title: "登录 · 焚诀",
+  robots: { follow: true, index: false },
+  title: "登录",
 };
 
 export default function LoginPage(props: AuthPageProps) {

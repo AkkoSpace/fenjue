@@ -24,6 +24,7 @@ export interface PromptEntryData {
   contentRelation: ContentRelation;
   images: PromptImage[];
   isNsfw: boolean;
+  publishedAt: string;
   prompt: string;
   slug: string;
   sourceUrl: string;

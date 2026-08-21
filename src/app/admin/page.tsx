@@ -31,8 +31,9 @@ import { hasR2WriteConfig } from "@/lib/r2/server";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "内容管理 · 焚诀",
   description: "管理焚诀全站文生图作品。",
+  robots: { follow: false, index: false },
+  title: "内容管理",
 };
 
 interface AdminPageProps {

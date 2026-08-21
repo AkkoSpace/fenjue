@@ -8,7 +8,8 @@ import { updatePassword } from "@/lib/auth/actions";
 import { type AuthPageProps, getAuthPageState } from "@/lib/auth/page";
 
 export const metadata: Metadata = {
-  title: "设置新密码 · 焚诀",
+  robots: { follow: true, index: false },
+  title: "设置新密码",
 };
 
 export default function ResetPasswordPage(props: AuthPageProps) {

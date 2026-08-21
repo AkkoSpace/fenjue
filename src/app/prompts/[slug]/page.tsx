@@ -3,17 +3,32 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { JsonLd } from "@/components/json-ld";
 import { PromptCopyButton } from "@/components/prompt-copy-button";
 import { PromptGallery } from "@/components/prompt-gallery";
 import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
 import { getAiToolOption } from "@/lib/content/ai-tools";
 import { getContentRelationOption } from "@/lib/content/relation";
 import { getPromptBySlug } from "@/lib/content/queries";
+import type { PromptEntryData } from "@/lib/content/types";
+import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
 export const instant = false;
 
 interface PromptPageProps {
   params: Promise<{ slug: string }>;
+}
+
+function promptDescription(entry: PromptEntryData) {
+  const tools = entry.verifiedTools
+    .map((tool) => getAiToolOption(tool).label)
+    .join("、");
+  const raw = `在焚诀查看“${entry.title}”的完整 AI 文生图提示词、参考图片、${entry.category.name}分类与相关标签${tools ? `，已在${tools}验证` : ""}。`;
+  const characters = [...raw];
+
+  return characters.length > 155
+    ? `${characters.slice(0, 154).join("")}…`
+    : raw;
 }
 
 export async function generateMetadata({
@@ -26,9 +41,45 @@ export async function generateMetadata({
     return {};
   }
 
+  const description = promptDescription(entry);
+  const canonical = `/prompts/${entry.slug}`;
+  const images = entry.images
+    .filter((image) => image.src)
+    .slice(0, 4)
+    .map((image) => ({
+      alt: image.alt,
+      height: image.height,
+      url: image.src!,
+      width: image.width,
+    }));
+
   return {
-    title: `${entry.title} · 焚诀`,
-    description: `查看“${entry.title}”的完整文生图提示词、${entry.category.name}分类与相关标签。`,
+    alternates: { canonical },
+    description,
+    openGraph: {
+      authors: [entry.author.url],
+      description,
+      images,
+      publishedTime: entry.publishedAt,
+      tags: entry.tags.map((tag) => tag.name),
+      title: entry.title,
+      type: "article",
+      url: canonical,
+    },
+    robots: entry.isNsfw
+      ? {
+          follow: true,
+          googleBot: { follow: true, index: false, noimageindex: true },
+          index: false,
+        }
+      : { follow: true, index: true },
+    title: entry.title,
+    twitter: {
+      card: "summary_large_image",
+      description,
+      images: images.map((image) => image.url),
+      title: entry.title,
+    },
   };
 }
 
@@ -41,9 +92,55 @@ export default async function PromptPage({ params }: PromptPageProps) {
   }
 
   const contentRelation = getContentRelationOption(entry.contentRelation);
+  const description = promptDescription(entry);
+  const canonical = absoluteUrl(`/prompts/${entry.slug}`);
+  const structuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          item: absoluteUrl("/"),
+          name: "文生图提示词",
+          position: 1,
+        },
+        {
+          "@type": "ListItem",
+          item: canonical,
+          name: entry.title,
+          position: 2,
+        },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "CreativeWork",
+      author: {
+        "@type": "Person",
+        name: entry.author.name,
+        url: entry.author.url,
+      },
+      datePublished: entry.publishedAt,
+      description,
+      genre: entry.category.name,
+      image: entry.images.flatMap((image) => (image.src ? [image.src] : [])),
+      inLanguage: "zh-CN",
+      isBasedOn: entry.sourceUrl,
+      keywords: entry.tags.map((tag) => tag.name).join("、"),
+      name: entry.title,
+      publisher: {
+        "@type": "Organization",
+        name: SITE_NAME,
+        url: absoluteUrl("/"),
+      },
+      url: canonical,
+    },
+  ];
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-7 sm:px-8 sm:pt-9">
+      <JsonLd data={structuredData} />
       <Link
         className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         href="/"

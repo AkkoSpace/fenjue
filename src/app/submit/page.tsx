@@ -8,8 +8,9 @@ import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "发布作品 · 焚诀",
   description: "发布一组可以复用的文生图提示词作品。",
+  robots: { follow: false, index: false },
+  title: "发布作品",
 };
 
 export default async function SubmitPage() {

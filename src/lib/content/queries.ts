@@ -41,6 +41,7 @@ interface PromptRow {
   prompt_tags: {
     tag: TagRow | TagRow[];
   }[];
+  published_at: string;
   slug: string;
   source_url: string;
   title: string;
@@ -51,6 +52,17 @@ interface PromptCardRow {
   prompt_images: PromptImageRow[];
   slug: string;
   title: string;
+}
+
+interface PromptSitemapRow {
+  id: string;
+  published_at: string;
+  slug: string;
+}
+
+export interface PromptSitemapEntry {
+  lastModified: string;
+  slug: string;
 }
 
 interface PromptFacetOption {
@@ -168,6 +180,7 @@ function promptFromRow(row: PromptRow, r2BaseUrl: string): PromptEntryData {
       .sort((a, b) => a.position - b.position)
       .map((image) => r2Image(r2BaseUrl, image.object_key, image)),
     isNsfw: row.is_nsfw,
+    publishedAt: row.published_at,
     prompt: row.prompt,
     slug: row.slug,
     sourceUrl: row.source_url,
@@ -196,11 +209,12 @@ function promptCardFromRow(
 }
 
 const PROMPT_SELECT =
-  "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))";
+  "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))";
 const PROMPT_CARD_SELECT =
   "slug,title,is_nsfw,prompt_images(position,object_key,alt,width,height)";
 
 export const PROMPT_PAGE_SIZE = 24;
+const SITEMAP_BATCH_SIZE = 1_000;
 
 function positivePage(value: number) {
   return Number.isSafeInteger(value) && value > 0 ? Math.min(value, 9999) : 1;
@@ -311,7 +325,6 @@ export async function getPromptPage({
       activeTag
         ? `${PROMPT_CARD_SELECT},selected_tag:prompt_tags!inner(tag_key)`
         : PROMPT_CARD_SELECT,
-      { count: "exact" },
     )
     .eq("published", true)
     .order("published_at", { ascending: false })
@@ -340,7 +353,7 @@ export async function getPromptPage({
   }
 
   const facets = normalizeFacets(facetResult.data);
-  const total = listResult.count ?? facets.filteredCount;
+  const total = facets.filteredCount;
 
   return {
     ...facets,
@@ -353,6 +366,53 @@ export async function getPromptPage({
     pageSize: PROMPT_PAGE_SIZE,
     totalPages: Math.max(1, Math.ceil(total / PROMPT_PAGE_SIZE)),
   };
+}
+
+export async function getPromptSitemapEntries(): Promise<
+  PromptSitemapEntry[]
+> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("prompts");
+
+  const supabase = publicContentClient();
+  const countResult = await supabase
+    .from("prompts")
+    .select("id", { count: "exact", head: true })
+    .eq("published", true);
+
+  if (countResult.error) {
+    console.error("Unable to count prompts for sitemap", countResult.error);
+    throw new Error("Unable to count prompts for sitemap");
+  }
+
+  const count = countResult.count ?? 0;
+  const batchCount = Math.ceil(count / SITEMAP_BATCH_SIZE);
+  const batchResults = await Promise.all(
+    Array.from({ length: batchCount }, (_, index) => {
+      const from = index * SITEMAP_BATCH_SIZE;
+
+      return supabase
+        .from("prompts")
+        .select("id,slug,published_at")
+        .eq("published", true)
+        .order("id", { ascending: true })
+        .range(from, from + SITEMAP_BATCH_SIZE - 1);
+    }),
+  );
+  const error = batchResults.find((result) => result.error)?.error;
+
+  if (error) {
+    console.error("Unable to load prompts for sitemap", error);
+    throw new Error("Unable to load prompts for sitemap");
+  }
+
+  return batchResults
+    .flatMap((result) => (result.data ?? []) as PromptSitemapRow[])
+    .map((row) => ({
+      lastModified: row.published_at,
+      slug: row.slug,
+    }));
 }
 
 export async function getPromptBySlug(

@@ -6,12 +6,17 @@ import type { PromptImage } from "@/lib/content/types";
 
 interface PromptGalleryProps {
   coverOnly?: boolean;
+  eager?: boolean;
   images: PromptImage[];
   title: string;
 }
 
+const CARD_IMAGE_SIZES =
+  "(max-width: 767px) calc(100vw - 40px), (max-width: 1439px) calc((100vw - 88px) / 2), (max-width: 1535px) 676px, 443px";
+
 export function PromptGallery({
   coverOnly = false,
+  eager = false,
   images,
   title,
 }: PromptGalleryProps) {
@@ -30,36 +35,27 @@ export function PromptGallery({
         style={{ aspectRatio: `${coverImage.width} / ${coverImage.height}` }}
         aria-label={`${title}封面${images.length > 1 ? `，共 ${images.length} 张图片` : ""}`}
       >
-        {stackedImages.map((image, index) =>
-          image.src ? (
-            <figure
-              key={image.src}
-              aria-hidden="true"
-              className={cn(
-                "absolute inset-0 overflow-hidden rounded-sm border border-border/80 bg-muted shadow-sm",
-                index === 0
-                  ? "z-10 translate-x-2 translate-y-2 rotate-[0.8deg]"
-                  : "z-0 translate-x-3 translate-y-3 rotate-[1.6deg]",
-              )}
-            >
-              <Image
-                src={image.src}
-                alt=""
-                fill
-                sizes="(max-width: 767px) calc(100vw - 52px), (max-width: 1535px) 50vw, 33vw"
-                className="object-cover"
-              />
-            </figure>
-          ) : null,
-        )}
+        {stackedImages.map((_, index) => (
+          <span
+            key={index}
+            aria-hidden="true"
+            className={cn(
+              "absolute inset-0 rounded-sm border border-border/80 bg-card shadow-sm",
+              index === 0
+                ? "z-10 translate-x-2 translate-y-2 rotate-[0.8deg]"
+                : "z-0 translate-x-3 translate-y-3 rotate-[1.6deg]",
+            )}
+          />
+        ))}
 
         <figure className="relative z-20 size-full overflow-hidden rounded-sm border border-border/60 bg-muted">
           <Image
             src={coverImage.src}
             alt={coverImage.alt}
             fill
-            priority
-            sizes="(max-width: 767px) calc(100vw - 52px), (max-width: 1535px) 50vw, 33vw"
+            fetchPriority={eager ? "high" : "auto"}
+            loading={eager ? "eager" : "lazy"}
+            sizes={CARD_IMAGE_SIZES}
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.01] motion-reduce:transition-none"
           />
         </figure>
@@ -92,7 +88,7 @@ export function PromptGallery({
               src={image.src}
               alt={image.alt}
               fill
-              priority={index === 0}
+              preload={index === 0}
               sizes="(max-width: 1439px) calc(100vw - 40px), 1376px"
               className="object-cover transition-transform duration-500 ease-out hover:scale-[1.01] motion-reduce:transition-none"
             />

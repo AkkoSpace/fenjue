@@ -13,7 +13,8 @@ import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "账户 · 焚诀",
+  robots: { follow: false, index: false },
+  title: "账户",
 };
 
 export default function AccountPage(props: AuthPageProps) {

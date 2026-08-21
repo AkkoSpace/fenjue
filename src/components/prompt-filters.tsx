@@ -61,6 +61,7 @@ export function PromptFilters({
             aria-current={!activeCategory ? "page" : undefined}
             className={filterLinkClassName(!activeCategory)}
             href={filterHref(undefined, activeTag)}
+            prefetch={false}
           >
             全部
             <span className="text-xs opacity-65">{categoryAllCount}</span>
@@ -71,6 +72,7 @@ export function PromptFilters({
               className={filterLinkClassName(activeCategory === category.key)}
               href={filterHref(category.key, activeTag)}
               key={category.key}
+              prefetch={false}
             >
               {category.name}
               <span className="text-xs opacity-65">{category.count}</span>
@@ -89,6 +91,7 @@ export function PromptFilters({
             aria-current={!activeTag ? "page" : undefined}
             className={filterLinkClassName(!activeTag)}
             href={filterHref(activeCategory)}
+            prefetch={false}
           >
             全部标签
             <span className="text-xs opacity-65">{tagAllCount}</span>
@@ -99,6 +102,7 @@ export function PromptFilters({
               className={filterLinkClassName(activeTag === tag.key)}
               href={filterHref(activeCategory, tag.key)}
               key={tag.key}
+              prefetch={false}
             >
               #{tag.name}
               <span className="text-xs opacity-65">{tag.count}</span>
@@ -115,6 +119,7 @@ export function PromptFilters({
           <Link
             className="inline-flex min-h-11 items-center text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-9"
             href="/"
+            prefetch={false}
           >
             清除筛选
           </Link>

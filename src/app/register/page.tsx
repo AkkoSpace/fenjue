@@ -4,7 +4,8 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { RegisterForm } from "@/components/auth/register-form";
 
 export const metadata: Metadata = {
-  title: "创建账户 · 焚诀",
+  robots: { follow: true, index: false },
+  title: "创建账户",
 };
 
 export default function RegisterPage() {

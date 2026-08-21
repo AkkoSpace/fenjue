@@ -137,7 +137,7 @@ export function PromptCarousel({ images, title }: PromptCarouselProps) {
                 alt={image.alt}
                 className="object-contain"
                 fill
-                priority={index === 0}
+                preload={index === 0}
                 sizes="(max-width: 1199px) calc(100vw - 40px), 1152px"
                 src={image.src}
               />

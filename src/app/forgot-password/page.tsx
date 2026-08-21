@@ -9,7 +9,8 @@ import { requestPasswordReset } from "@/lib/auth/actions";
 import { type AuthPageProps, getAuthPageState } from "@/lib/auth/page";
 
 export const metadata: Metadata = {
-  title: "重置密码 · 焚诀",
+  robots: { follow: true, index: false },
+  title: "重置密码",
 };
 
 export default function ForgotPasswordPage(props: AuthPageProps) {
