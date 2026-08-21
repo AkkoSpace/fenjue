@@ -10,6 +10,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { PromptReviewBadge } from "@/components/prompt-review-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminOverview } from "@/lib/admin/queries";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,7 @@ async function OverviewContent() {
   const data = await getAdminOverview();
   const stats = [
     {
-      detail: `${data.content.counts.hidden} 条已下架`,
+      detail: `${data.content.counts.pending} 条等待审核`,
       icon: Images,
       label: "全部内容",
       value: data.content.counts.all,
@@ -145,9 +146,10 @@ async function OverviewContent() {
                       {prompt.authorName} · {dateFormatter.format(new Date(prompt.createdAt))}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {prompt.published ? "展示中" : "已下架"}
-                  </span>
+                  <PromptReviewBadge
+                    className="shrink-0"
+                    status={prompt.reviewStatus}
+                  />
                 </Link>
               ))}
             </div>
@@ -163,7 +165,7 @@ async function OverviewContent() {
           </h2>
           <div className="mt-5 divide-y divide-border">
             {[
-              ["处理内容", "搜索、编辑、上下架和删除作品", "/admin/content"],
+              ["审核内容", "检查投稿、编辑内容并给出审核结论", "/admin/content?status=pending"],
               ["查看用户", "确认邮箱状态与调整管理员权限", "/admin/users"],
               ["维护分类", "管理主分类、风格、形式与主题标签", "/admin/taxonomy"],
             ].map(([label, description, href]) => (

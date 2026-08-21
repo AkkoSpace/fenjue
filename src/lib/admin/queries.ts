@@ -6,6 +6,7 @@ import {
   type AiToolKey,
 } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
+import type { PromptReviewStatus } from "@/lib/content/review";
 import type {
   TaxonomyCategory,
   TaxonomyTag,
@@ -15,7 +16,7 @@ import type {
 const PAGE_SIZE = 20;
 const MAX_SEARCH_LENGTH = 80;
 
-export type AdminPromptStatus = "all" | "hidden" | "published";
+export type AdminPromptStatus = "all" | PromptReviewStatus;
 export type PromptImportStatus = "missing_media" | "needs_review" | "ready";
 
 interface PromptImageRow {
@@ -61,6 +62,9 @@ interface PromptAdminRow {
   }[];
   published: boolean;
   published_at: string | null;
+  review_note: string | null;
+  review_status: PromptReviewStatus;
+  reviewed_at: string | null;
   slug: string;
   source_url: string;
   title: string;
@@ -84,6 +88,7 @@ export interface AdminPromptListItem {
   isNsfw: boolean;
   published: boolean;
   publishedAt: string | null;
+  reviewStatus: PromptReviewStatus;
   slug: string;
   sourceUrl: string;
   tags: TaxonomyTag[];
@@ -110,6 +115,9 @@ export interface AdminPromptDetail {
   isNsfw: boolean;
   prompt: string;
   published: boolean;
+  reviewNote: string | null;
+  reviewStatus: PromptReviewStatus;
+  reviewedAt: string | null;
   slug: string;
   sourceUrl: string;
   tags: TaxonomyTag[];
@@ -160,7 +168,9 @@ function parsePage(value: string | undefined) {
 }
 
 function parseStatus(value: string | undefined): AdminPromptStatus {
-  return value === "published" || value === "hidden" ? value : "all";
+  return value === "pending" || value === "approved" || value === "rejected"
+    ? value
+    : "all";
 }
 
 function publicImageUrl(objectKey: string) {
@@ -184,14 +194,14 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
   let listQuery = supabase
     .from("prompts")
     .select(
-      "id,slug,title,author_name,source_url,is_nsfw,content_relation,import_status,import_note,published,published_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
+      "id,slug,title,author_name,source_url,is_nsfw,content_relation,import_status,import_note,published,published_at,review_status,review_note,reviewed_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
     .range(from, from + PAGE_SIZE - 1);
 
   if (status !== "all") {
-    listQuery = listQuery.eq("published", status === "published");
+    listQuery = listQuery.eq("review_status", status);
   }
 
   if (query) {
@@ -201,7 +211,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
     );
   }
 
-  const [listResult, allResult, publishedResult, hiddenResult] =
+  const [listResult, allResult, pendingResult, approvedResult, rejectedResult] =
     await Promise.all([
       listQuery,
       supabase
@@ -210,23 +220,28 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
       supabase
         .from("prompts")
         .select("id", { count: "exact", head: true })
-        .eq("published", true),
+        .eq("review_status", "pending"),
       supabase
         .from("prompts")
         .select("id", { count: "exact", head: true })
-        .eq("published", false),
+        .eq("review_status", "approved"),
+      supabase
+        .from("prompts")
+        .select("id", { count: "exact", head: true })
+        .eq("review_status", "rejected"),
     ]);
 
   const error =
     listResult.error ??
     allResult.error ??
-    publishedResult.error ??
-    hiddenResult.error;
+    pendingResult.error ??
+    approvedResult.error ??
+    rejectedResult.error;
 
   if (error) {
     console.warn("Unable to load admin prompt list", error.code);
     return {
-      counts: { all: 0, hidden: 0, published: 0 },
+      counts: { all: 0, approved: 0, pending: 0, rejected: 0 },
       error: "作品列表加载失败，请检查管理员权限和数据库迁移。",
       items: [] as AdminPromptListItem[],
       page,
@@ -279,6 +294,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
       isNsfw: row.is_nsfw,
       published: row.published,
       publishedAt: row.published_at,
+      reviewStatus: row.review_status,
       slug: row.slug,
       sourceUrl: row.source_url,
       tags: row.prompt_tags
@@ -307,8 +323,9 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
   return {
     counts: {
       all: allResult.count ?? 0,
-      hidden: hiddenResult.count ?? 0,
-      published: publishedResult.count ?? 0,
+      approved: approvedResult.count ?? 0,
+      pending: pendingResult.count ?? 0,
+      rejected: rejectedResult.count ?? 0,
     },
     error: undefined,
     items,
@@ -326,7 +343,7 @@ export async function getAdminPrompt(id: string) {
   const { data, error } = await supabase
     .from("prompts")
     .select(
-      "id,user_id,slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
+      "id,user_id,slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published,published_at,review_status,review_note,reviewed_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
     )
     .eq("id", id)
     .maybeSingle();
@@ -381,6 +398,9 @@ export async function getAdminPrompt(id: string) {
     isNsfw: row.is_nsfw,
     prompt: row.prompt,
     published: row.published,
+    reviewNote: row.review_note,
+    reviewStatus: row.review_status,
+    reviewedAt: row.reviewed_at,
     slug: row.slug,
     sourceUrl: row.source_url,
     tags: row.prompt_tags

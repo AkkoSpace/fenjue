@@ -111,7 +111,6 @@ export function AdminPromptEditor({
   const [images, setImages] = useState(() => initialImages(initial));
   const [removed, setRemoved] = useState<RemovedImage[]>([]);
   const [isNsfw, setIsNsfw] = useState(initial.isNsfw);
-  const [published, setPublished] = useState(initial.published);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
@@ -274,7 +273,6 @@ export function AdminPromptEditor({
         images: imageInputs,
         isNsfw,
         prompt,
-        published,
         sourceUrl,
         tagKeys,
         title,
@@ -353,7 +351,7 @@ export function AdminPromptEditor({
           <div className="mb-5 flex items-baseline justify-between gap-3 border-b border-border pb-3">
             <div className="flex items-baseline gap-3">
               <span aria-hidden="true" className="font-serif text-sm text-primary">叁</span>
-              <h2 className="font-serif text-xl" id="edit-images-heading">图片与状态</h2>
+              <h2 className="font-serif text-xl" id="edit-images-heading">图片与内容标记</h2>
             </div>
             <span className="text-xs text-muted-foreground">{images.length} / {MAX_PROMPT_IMAGES}</span>
           </div>
@@ -404,10 +402,6 @@ export function AdminPromptEditor({
           ) : null}
 
           <div className="mt-5 divide-y divide-border border-y border-border">
-            <div className="flex items-start justify-between gap-5 py-4">
-              <div><label className="text-sm font-medium" htmlFor="admin-published">公开展示</label><p className="mt-1 text-xs leading-5 text-muted-foreground">关闭后作品从前台和 Sitemap 中下架。</p></div>
-              <Switch aria-label="公开展示" checked={published} disabled={isSaving} id="admin-published" onCheckedChange={setPublished} />
-            </div>
             <div className="flex items-start justify-between gap-5 py-4">
               <div><label className="text-sm font-medium" htmlFor="admin-nsfw">敏感内容（NSFW）</label><p className="mt-1 text-xs leading-5 text-muted-foreground">开启后前台图片默认模糊，需要访客主动查看。</p></div>
               <Switch aria-label="敏感内容" checked={isNsfw} disabled={isSaving} id="admin-nsfw" onCheckedChange={setIsNsfw} />

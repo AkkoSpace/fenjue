@@ -327,6 +327,7 @@ export async function getPromptPage({
         : PROMPT_CARD_SELECT,
     )
     .eq("published", true)
+    .eq("review_status", "approved")
     .order("published_at", { ascending: false })
     .range(from, from + PROMPT_PAGE_SIZE - 1);
 
@@ -379,7 +380,8 @@ export async function getPromptSitemapEntries(): Promise<
   const countResult = await supabase
     .from("prompts")
     .select("id", { count: "exact", head: true })
-    .eq("published", true);
+    .eq("published", true)
+    .eq("review_status", "approved");
 
   if (countResult.error) {
     console.error("Unable to count prompts for sitemap", countResult.error);
@@ -396,6 +398,7 @@ export async function getPromptSitemapEntries(): Promise<
         .from("prompts")
         .select("id,slug,published_at")
         .eq("published", true)
+        .eq("review_status", "approved")
         .order("id", { ascending: true })
         .range(from, from + SITEMAP_BATCH_SIZE - 1);
     }),
@@ -428,6 +431,7 @@ export async function getPromptBySlug(
     .from("prompts")
     .select(PROMPT_SELECT)
     .eq("published", true)
+    .eq("review_status", "approved")
     .eq("slug", slug)
     .maybeSingle();
 

@@ -132,6 +132,7 @@ begin
       is_nsfw,
       content_relation,
       category_key,
+      review_status,
       published,
       published_at,
       import_source,
@@ -152,12 +153,9 @@ begin
       false,
       'repost',
       item ->> 'category_key',
-      item ->> 'import_status' = 'ready',
-      case
-        when item ->> 'import_status' = 'ready'
-          then coalesce((item ->> 'source_published_at')::timestamptz, now())
-        else null
-      end,
+      'pending',
+      false,
+      null,
       'youmind-nano-banana-pro-20260802',
       item ->> 'external_id',
       nullif(item ->> 'source_description', ''),
@@ -174,8 +172,12 @@ begin
       author_url = excluded.author_url,
       source_url = excluded.source_url,
       category_key = excluded.category_key,
-      published = excluded.published,
-      published_at = excluded.published_at,
+      review_status = 'pending',
+      review_note = null,
+      reviewed_at = null,
+      reviewed_by = null,
+      published = false,
+      published_at = null,
       source_description = excluded.source_description,
       source_published_at = excluded.source_published_at,
       import_status = excluded.import_status,

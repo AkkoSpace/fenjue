@@ -9,13 +9,13 @@
 ## 核心职责
 
 - `queries.ts`：查询总览、作品列表与详情、用户和分类词表。
-- `actions.ts`：执行单条作品编辑、上下架和永久删除。
+- `actions.ts`：执行单条作品编辑、审核决策和永久删除。
 - `user-actions.ts`：调整普通用户与普通管理员角色，仅允许唯一超级管理员调用。
 - `taxonomy-actions.ts`：创建、编辑和停用受控分类与标签。
 - `action-utils.ts`：统一约束后台返回地址、消息参数和基础输入。
 - 所有入口均通过 `requireAdmin()` 校验当前 Supabase 用户的管理员角色。
 
-本模块不负责通用上传、举报、封禁或统计系统。管理员授权由 Supabase `profiles.role` 控制，唯一超管由 `profiles.is_super_admin` 标记；上传统一使用 `/submit`。
+本模块不负责通用上传、举报、封禁或统计系统。管理员授权由 Supabase `profiles.role` 控制，唯一超管由 `profiles.is_super_admin` 标记；投稿统一使用 `/submit`。
 
 ## 依赖关系
 

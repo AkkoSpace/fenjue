@@ -277,13 +277,16 @@ export function PromptEditor({
         return;
       }
 
-      router.push(`/prompts/${result.slug}`);
+      const params = new URLSearchParams({
+        success: "作品已提交，审核通过后会公开展示。",
+      });
+      router.push(`/account?${params.toString()}`);
       router.refresh();
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "发布没有完成，请稍后重试。",
+          : "提交没有完成，请稍后重试。",
       );
     } finally {
       setIsPublishing(false);
@@ -472,7 +475,7 @@ export function PromptEditor({
                     style={{ aspectRatio: `${image.width} / ${image.height}` }}
                   >
                     <Image
-                      alt={`待发布图片 ${index + 1}`}
+                      alt={`待提交图片 ${index + 1}`}
                       className="object-cover"
                       fill
                       sizes="(max-width: 1023px) 50vw, 220px"
@@ -552,7 +555,7 @@ export function PromptEditor({
                 className="mt-1 text-xs leading-5 text-muted-foreground"
                 id="is-nsfw-description"
               >
-                开启后，公开页面会默认模糊图片，访客点击后才会显示。
+                审核通过后，公开页面会默认模糊图片，访客点击后才会显示。
               </p>
             </div>
             <Switch
@@ -586,7 +589,7 @@ export function PromptEditor({
             ) : (
               <Upload aria-hidden="true" />
             )}
-            {isPublishing ? "正在发布" : "发布作品"}
+            {isPublishing ? "正在提交" : "提交审核"}
           </Button>
         </section>
       </div>

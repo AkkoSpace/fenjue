@@ -1,13 +1,15 @@
-import { LogOut, ShieldCheck } from "lucide-react";
+import { ArrowRight, LogOut, ShieldCheck } from "lucide-react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { AuthShell, AuthShellFallback } from "@/components/auth/auth-shell";
+import { PromptReviewBadge } from "@/components/prompt-review-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { signOut } from "@/lib/auth/actions";
 import { type AuthPageProps, getAuthPageState } from "@/lib/auth/page";
+import type { PromptReviewStatus } from "@/lib/content/review";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -16,6 +18,10 @@ export const metadata: Metadata = {
   robots: { follow: false, index: false },
   title: "账户",
 };
+
+const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
+  dateStyle: "medium",
+});
 
 export default function AccountPage(props: AuthPageProps) {
   return (
@@ -42,12 +48,33 @@ async function AccountContent({ searchParams }: AuthPageProps) {
     redirect("/login?next=/account");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name,is_super_admin,role")
-    .eq("id", user.id)
-    .maybeSingle();
-  const { message } = await getAuthPageState(searchParams);
+  const [profileResult, submissionResult, { message }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name,is_super_admin,role")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("prompts")
+      .select("id,slug,title,review_status,review_note,published,created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    getAuthPageState(searchParams),
+  ]);
+  const profile = profileResult.data;
+  if (submissionResult.error) {
+    console.warn("Unable to load account submissions", submissionResult.error.code);
+  }
+  const submissions = (submissionResult.data ?? []) as {
+    created_at: string;
+    id: string;
+    published: boolean;
+    review_note: string | null;
+    review_status: PromptReviewStatus;
+    slug: string;
+    title: string;
+  }[];
   const isAdmin = profile?.role === "admin";
   const identity = profile?.is_super_admin
     ? "超级管理员"
@@ -78,6 +105,77 @@ async function AccountContent({ searchParams }: AuthPageProps) {
           <dd className="text-foreground">{identity}</dd>
         </div>
       </dl>
+
+      <section aria-labelledby="submissions-heading" className="mt-7">
+        <div className="flex items-end justify-between gap-4 border-b border-border pb-3">
+          <div>
+            <p className="text-xs tracking-[0.16em] text-primary uppercase">
+              Submissions
+            </p>
+            <h2 className="mt-1 font-serif text-xl" id="submissions-heading">
+              我的投稿
+            </h2>
+          </div>
+          <Link
+            className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+            href="/submit"
+          >
+            继续提交
+            <ArrowRight aria-hidden="true" className="size-4" />
+          </Link>
+        </div>
+
+        {submissions.length ? (
+          <div className="divide-y divide-border">
+            {submissions.map((submission) => {
+              const content = (
+                <>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-medium text-foreground">
+                      {submission.title}
+                    </h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {dateFormatter.format(new Date(submission.created_at))}
+                    </p>
+                  </div>
+                  <PromptReviewBadge
+                    className="shrink-0"
+                    status={submission.review_status}
+                  />
+                </>
+              );
+
+              return (
+                <article className="py-4" key={submission.id}>
+                  {submission.review_status === "approved" &&
+                  submission.published ? (
+                    <Link
+                      className="group flex min-h-11 items-center justify-between gap-4"
+                      href={`/prompts/${submission.slug}` as Route}
+                    >
+                      {content}
+                    </Link>
+                  ) : (
+                    <div className="flex min-h-11 items-center justify-between gap-4">
+                      {content}
+                    </div>
+                  )}
+                  {submission.review_status === "rejected" &&
+                  submission.review_note ? (
+                    <p className="mt-2 border-l-2 border-destructive/40 pl-3 text-xs leading-5 text-muted-foreground">
+                      {submission.review_note}
+                    </p>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="py-5 text-sm leading-6 text-muted-foreground">
+            还没有投稿。提交后可以在这里查看审核状态。
+          </p>
+        )}
+      </section>
 
       {isAdmin ? (
         <Link

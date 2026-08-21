@@ -96,7 +96,7 @@ function AccountLinks({ isAdmin }: Pick<AccountMenuClientProps, "isAdmin">) {
   return (
     <div className="py-1.5">
       <AccountLink code="ACCOUNT" href="/account" icon={UserRound} label="我的账户" />
-      <AccountLink code="SUBMIT" href="/submit" icon={Upload} label="发布作品" />
+      <AccountLink code="SUBMIT" href="/submit" icon={Upload} label="提交作品" />
       {isAdmin ? (
         <AccountLink code="ADMIN" href="/admin" icon={ShieldCheck} label="管理后台" />
       ) : null}

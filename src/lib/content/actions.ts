@@ -169,7 +169,7 @@ export async function publishPrompt(
   } = await supabase.auth.getUser();
 
   if (!user || !user.email_confirmed_at) {
-    return { error: "请先登录后再发布作品。", ok: false };
+    return { error: "请先登录并完成邮箱验证后再提交作品。", ok: false };
   }
 
   const input: PublishPromptInput = {
@@ -221,7 +221,7 @@ export async function publishPrompt(
   if (insertError) {
     console.warn("Unable to create prompt", insertError.code);
     return {
-      error: "作品发布失败，请检查数据库迁移是否已执行后重试。",
+      error: "作品提交失败，请检查数据库迁移是否已执行后重试。",
       ok: false,
     };
   }

@@ -15,6 +15,10 @@ import {
   type ContentRelation,
 } from "@/lib/content/relation";
 import {
+  isPromptReviewStatus,
+  PROMPT_REVIEW_STATUS_META,
+} from "@/lib/content/review";
+import {
   isTaxonomyKey,
   MAX_PROMPT_TAGS,
   normalizeTaxonomyKeys,
@@ -38,51 +42,51 @@ function invalidIdUrl(returnTo: string) {
   return adminMessageUrl(returnTo, "error", "作品标识无效，请刷新页面后重试。");
 }
 
-export async function setPromptPublication(formData: FormData) {
+export async function reviewPrompt(formData: FormData) {
   const id = cleanAdminInput(formData.get("id"));
   const returnTo = cleanAdminInput(formData.get("returnTo"));
-  const published = cleanAdminInput(formData.get("published")) === "true";
+  const decision = cleanAdminInput(formData.get("decision"));
+  const note = cleanAdminInput(formData.get("note"));
 
   if (!UUID_PATTERN.test(id)) {
     redirect(invalidIdUrl(returnTo));
   }
 
-  const { supabase } = await requireAdmin("/admin" as Route);
-  const { data: prompt, error: readError } = await supabase
-    .from("prompts")
-    .select("title,prompt_images(id)")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (readError || !prompt) {
-    console.warn("Unable to find prompt for publication", readError?.code);
-    redirect(adminMessageUrl(returnTo, "error", "没有找到要更新的作品。"));
+  if (!isPromptReviewStatus(decision)) {
+    redirect(adminMessageUrl(returnTo, "error", "审核结论无效，请重试。"));
   }
 
-  if (published && !prompt.prompt_images.length) {
+  if (decision === "rejected" && !note) {
     redirect(
       adminMessageUrl(
         returnTo,
         "error",
-        `《${prompt.title}》还没有图片，补充图片后才能公开展示。`,
+        "驳回作品时需要填写原因，方便投稿者修改。",
       ),
     );
   }
 
-  const { data, error } = await supabase
-    .from("prompts")
-    .update({
-      published,
-      published_at: published ? new Date().toISOString() : null,
-    })
-    .eq("id", id)
-    .select("title")
-    .maybeSingle();
+  if (note.length > 2000) {
+    redirect(adminMessageUrl(returnTo, "error", "审核备注不能超过 2000 个字符。"));
+  }
 
-  if (error || !data) {
-    console.warn("Unable to update prompt publication", error?.code);
+  const { supabase } = await requireAdmin("/admin" as Route);
+  const { data, error } = await supabase.rpc("admin_review_prompt", {
+    p_decision: decision,
+    p_id: id,
+    p_note: note || null,
+  });
+
+  if (error || typeof data !== "string") {
+    console.warn("Unable to review prompt", error?.code);
     redirect(
-      adminMessageUrl(returnTo, "error", "作品状态更新失败，请稍后重试。"),
+      adminMessageUrl(
+        returnTo,
+        "error",
+        decision === "approved"
+          ? "审核未完成，请确认作品至少有一张图片、有效分类和标签。"
+          : "审核状态更新失败，请稍后重试。",
+      ),
     );
   }
 
@@ -91,7 +95,9 @@ export async function setPromptPublication(formData: FormData) {
     adminMessageUrl(
       returnTo,
       "success",
-      published ? `《${data.title}》已恢复展示。` : `《${data.title}》已下架。`,
+      decision === "approved"
+        ? "作品已通过审核并公开展示。"
+        : `作品已设为${PROMPT_REVIEW_STATUS_META[decision].label}。`,
     ),
   );
 }
@@ -177,7 +183,6 @@ export interface UpdateAdminPromptInput {
   images: UpdateAdminPromptImageInput[];
   isNsfw: boolean;
   prompt: string;
-  published: boolean;
   sourceUrl: string;
   tagKeys: string[];
   title: string;
@@ -292,7 +297,6 @@ export async function updateAdminPrompt(
     images: Array.isArray(rawInput?.images) ? rawInput.images : [],
     isNsfw: rawInput?.isNsfw === true,
     prompt: cleanAdminInput(rawInput?.prompt),
-    published: rawInput?.published === true,
     sourceUrl: cleanAdminInput(rawInput?.sourceUrl),
     tagKeys: Array.isArray(rawInput?.tagKeys) ? rawInput.tagKeys : [],
     title: cleanAdminInput(rawInput?.title),
@@ -331,7 +335,7 @@ export async function updateAdminPrompt(
     };
   }
 
-  const { data, error } = await supabase.rpc("admin_update_prompt", {
+  const { data, error } = await supabase.rpc("admin_update_prompt_content", {
     p_author_name: input.authorName,
     p_author_url: input.authorUrl,
     p_category_key: input.categoryKey,
@@ -346,7 +350,6 @@ export async function updateAdminPrompt(
     })),
     p_is_nsfw: input.isNsfw,
     p_prompt: input.prompt,
-    p_published: input.published,
     p_source_url: input.sourceUrl,
     p_tag_keys: normalizeTaxonomyKeys(input.tagKeys),
     p_title: input.title,

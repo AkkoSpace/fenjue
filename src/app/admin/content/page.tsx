@@ -1,8 +1,6 @@
 import {
   ArrowLeft,
   ArrowRight,
-  Eye,
-  EyeOff,
   ExternalLink,
   ImageIcon,
   PencilLine,
@@ -15,14 +13,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { ActionButton } from "@/components/admin/action-button";
 import { AdminNotice, firstMessage } from "@/components/admin/admin-notice";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DeletePromptForm } from "@/components/admin/delete-prompt-form";
+import { PromptReviewBadge } from "@/components/prompt-review-badge";
 import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { setPromptPublication } from "@/lib/admin/actions";
 import {
   type AdminPromptSearchParams,
   type AdminPromptStatus,
@@ -34,7 +31,7 @@ import { hasR2WriteConfig } from "@/lib/r2/server";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  description: "搜索、编辑、上下架与删除焚诀作品。",
+  description: "搜索、审核、编辑与删除焚诀作品。",
   title: { absolute: "内容管理｜焚诀" },
 };
 
@@ -120,11 +117,6 @@ async function Content({ searchParams }: ContentPageProps) {
   const raw = await searchParams;
   const data = await getAdminPrompts(raw);
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
-  const returnTo = contentHref({
-    page: data.page,
-    query: data.query,
-    status: data.status,
-  });
   const message = firstMessage(raw.error)
     ? { kind: "error" as const, text: firstMessage(raw.error)! }
     : firstMessage(raw.warning)
@@ -139,8 +131,9 @@ async function Content({ searchParams }: ContentPageProps) {
     value: AdminPromptStatus;
   }[] = [
     { count: data.counts.all, label: "全部", value: "all" },
-    { count: data.counts.published, label: "展示中", value: "published" },
-    { count: data.counts.hidden, label: "已下架", value: "hidden" },
+    { count: data.counts.pending, label: "待审核", value: "pending" },
+    { count: data.counts.approved, label: "已通过", value: "approved" },
+    { count: data.counts.rejected, label: "已驳回", value: "rejected" },
   ];
 
   return (
@@ -155,7 +148,7 @@ async function Content({ searchParams }: ContentPageProps) {
             上传作品
           </Link>
         }
-        description="逐条维护作品信息、图片、发布状态和来源关系。"
+        description="逐条检查作品、来源与图片；只有审核通过的内容才会公开展示。"
         eyebrow="Content · 内容"
         title="内容管理"
       />
@@ -245,10 +238,7 @@ async function Content({ searchParams }: ContentPageProps) {
                 </div>
 
                 <div className="col-start-2 xl:col-start-auto">
-                  <p className="flex items-center gap-2 text-sm text-foreground">
-                    <span aria-hidden="true" className={cn("size-1.5 rounded-full", prompt.published ? "bg-emerald-600" : "bg-muted-foreground")} />
-                    {prompt.published ? "展示中" : "已下架"}
-                  </p>
+                  <PromptReviewBadge status={prompt.reviewStatus} />
                   <p className="mt-1 text-xs text-muted-foreground">{dateFormatter.format(new Date(prompt.createdAt))}</p>
                 </div>
 
@@ -257,9 +247,10 @@ async function Content({ searchParams }: ContentPageProps) {
                     className={cn(buttonVariants({ size: "sm", variant: "outline" }), "min-h-11 rounded-sm sm:min-h-9")}
                     href={`/admin/content/${prompt.id}/edit` as Route}
                   >
-                    <PencilLine aria-hidden="true" />编辑
+                    <PencilLine aria-hidden="true" />
+                    {prompt.reviewStatus === "pending" ? "审核" : "查看与编辑"}
                   </Link>
-                  {prompt.published ? (
+                  {prompt.reviewStatus === "approved" && prompt.published ? (
                     <Link
                       className={cn(buttonVariants({ size: "icon-sm", variant: "ghost" }), "size-11 rounded-sm sm:size-9")}
                       href={`/prompts/${prompt.slug}` as Route}
@@ -268,16 +259,7 @@ async function Content({ searchParams }: ContentPageProps) {
                       <ExternalLink aria-hidden="true" /><span className="sr-only">查看公开页面</span>
                     </Link>
                   ) : null}
-                  <form action={setPromptPublication}>
-                    <input name="id" type="hidden" value={prompt.id} />
-                    <input name="published" type="hidden" value={String(!prompt.published)} />
-                    <input name="returnTo" type="hidden" value={returnTo} />
-                    <ActionButton className="min-h-11 rounded-sm sm:min-h-9" pendingLabel="处理中" size="sm" type="submit" variant="outline">
-                      {prompt.published ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
-                      {prompt.published ? "下架" : "恢复"}
-                    </ActionButton>
-                  </form>
-                  <DeletePromptForm canDelete={canDelete} id={prompt.id} returnTo={returnTo} title={prompt.title} />
+                  <DeletePromptForm canDelete={canDelete} id={prompt.id} returnTo={contentHref({ page: data.page, query: data.query, status: data.status })} title={prompt.title} />
                 </div>
               </article>
             ))}

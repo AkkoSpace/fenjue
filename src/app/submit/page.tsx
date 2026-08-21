@@ -8,9 +8,9 @@ import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  description: "发布一组可以复用的文生图提示词作品。",
+  description: "提交一组可以复用的文生图提示词作品，审核后公开展示。",
   robots: { follow: false, index: false },
-  title: "发布作品",
+  title: "提交作品",
 };
 
 export default async function SubmitPage() {
@@ -54,13 +54,13 @@ async function SubmitContent() {
     <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
       <div className="max-w-2xl">
         <p className="mb-2 text-xs font-medium tracking-[0.2em] text-primary uppercase">
-          Prompt Submission · 发布
+          Prompt Submission · 投稿
         </p>
         <h1 className="font-serif text-3xl leading-tight text-foreground sm:text-4xl">
-          发布一组作品
+          提交一组作品
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-          把真正值得复用的图片和提示词留在焚诀。
+          把真正值得复用的图片和提示词留在焚诀。提交后会进入审核，通过后公开展示。
         </p>
       </div>
 
