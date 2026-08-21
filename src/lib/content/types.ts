@@ -31,3 +31,8 @@ export interface PromptEntryData {
   title: string;
   verifiedTools: AiToolKey[];
 }
+
+export type PromptCardData = Pick<
+  PromptEntryData,
+  "images" | "isNsfw" | "slug" | "title"
+>;

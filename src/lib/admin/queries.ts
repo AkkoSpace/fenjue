@@ -16,6 +16,7 @@ const PAGE_SIZE = 20;
 const MAX_SEARCH_LENGTH = 80;
 
 export type AdminPromptStatus = "all" | "hidden" | "published";
+export type PromptImportStatus = "missing_media" | "needs_review" | "ready";
 
 interface PromptImageRow {
   alt: string;
@@ -39,6 +40,8 @@ interface PromptAdminRow {
   content_relation: ContentRelation;
   created_at: string;
   id: string;
+  import_note: string | null;
+  import_status: PromptImportStatus | null;
   is_nsfw: boolean;
   prompt_images: PromptImageRow[];
   prompt_ai_tools: { tool_key: AiToolKey }[];
@@ -75,6 +78,8 @@ export interface AdminPromptListItem {
   contentRelation: ContentRelation;
   id: string;
   imageCount: number;
+  importNote: string | null;
+  importStatus: PromptImportStatus | null;
   isNsfw: boolean;
   published: boolean;
   publishedAt: string | null;
@@ -127,7 +132,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
   let listQuery = supabase
     .from("prompts")
     .select(
-      "id,slug,title,author_name,source_url,is_nsfw,content_relation,published,published_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
+      "id,slug,title,author_name,source_url,is_nsfw,content_relation,import_status,import_note,published,published_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
@@ -217,6 +222,8 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
       contentRelation: row.content_relation,
       id: row.id,
       imageCount: images.length,
+      importNote: row.import_note,
+      importStatus: row.import_status,
       isNsfw: row.is_nsfw,
       published: row.published,
       publishedAt: row.published_at,

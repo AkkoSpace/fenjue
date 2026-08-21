@@ -56,6 +56,27 @@ export async function setPromptPublication(formData: FormData) {
   }
 
   const { supabase } = await requireAdmin("/admin" as Route);
+  const { data: prompt, error: readError } = await supabase
+    .from("prompts")
+    .select("title,prompt_images(id)")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (readError || !prompt) {
+    console.warn("Unable to find prompt for publication", readError?.code);
+    redirect(adminMessageUrl(returnTo, "error", "没有找到要更新的作品。"));
+  }
+
+  if (published && !prompt.prompt_images.length) {
+    redirect(
+      adminMessageUrl(
+        returnTo,
+        "error",
+        `《${prompt.title}》还没有图片，补充图片后才能公开展示。`,
+      ),
+    );
+  }
+
   const { data, error } = await supabase
     .from("prompts")
     .update({

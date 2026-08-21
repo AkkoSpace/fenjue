@@ -1,12 +1,19 @@
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import type { Route } from "next";
+import Link from "next/link";
+
 import { PromptEntry } from "@/components/prompt-entry";
 import { PromptFilters } from "@/components/prompt-filters";
-import { getPrompts } from "@/lib/content/queries";
+import { getPromptPage } from "@/lib/content/queries";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export const instant = false;
 
 interface HomeProps {
   searchParams: Promise<{
     category?: string | string[];
+    page?: string | string[];
     tag?: string | string[];
   }>;
 }
@@ -15,68 +22,27 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function parsePage(value: string | undefined) {
+  const page = Number.parseInt(value ?? "1", 10);
+  return Number.isSafeInteger(page) && page > 0 ? page : 1;
+}
+
+function pageHref(page: number, category?: string, tag?: string) {
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  if (tag) params.set("tag", tag);
+  if (page > 1) params.set("page", String(page));
+  const search = params.toString();
+  return `/${search ? `?${search}` : ""}` as Route;
+}
+
 export default async function Home({ searchParams }: HomeProps) {
   const raw = await searchParams;
-  const entries = await getPrompts();
-  const requestedCategory = first(raw.category);
-  const requestedTag = first(raw.tag);
-  const activeCategory = entries.some(
-    (entry) => entry.category.key === requestedCategory,
-  )
-    ? requestedCategory
-    : undefined;
-  const activeTag = entries.some((entry) =>
-    entry.tags.some((tag) => tag.key === requestedTag),
-  )
-    ? requestedTag
-    : undefined;
-  const filteredEntries = entries.filter(
-    (entry) =>
-      (!activeCategory || entry.category.key === activeCategory) &&
-      (!activeTag || entry.tags.some((tag) => tag.key === activeTag)),
-  );
-  const categoryMap = new Map<
-    string,
-    { count: number; key: string; name: string; sortOrder: number }
-  >();
-  const tagMap = new Map<
-    string,
-    { count: number; key: string; name: string; sortOrder: number }
-  >();
-  const categoryEntries = activeTag
-    ? entries.filter((entry) =>
-        entry.tags.some((tag) => tag.key === activeTag),
-      )
-    : entries;
-  const tagEntries = activeCategory
-    ? entries.filter((entry) => entry.category.key === activeCategory)
-    : entries;
-
-  for (const entry of categoryEntries) {
-    const category = categoryMap.get(entry.category.key);
-    categoryMap.set(entry.category.key, {
-      count: (category?.count ?? 0) + 1,
-      ...entry.category,
-    });
-  }
-
-  for (const entry of tagEntries) {
-    for (const tag of entry.tags) {
-      const current = tagMap.get(tag.key);
-      tagMap.set(tag.key, {
-        count: (current?.count ?? 0) + 1,
-        key: tag.key,
-        name: tag.name,
-        sortOrder: tag.sortOrder,
-      });
-    }
-  }
-  const categories = [...categoryMap.values()].sort(
-    (left, right) => left.sortOrder - right.sortOrder,
-  );
-  const tags = [...tagMap.values()].sort(
-    (left, right) => left.sortOrder - right.sortOrder,
-  );
+  const data = await getPromptPage({
+    categoryKey: first(raw.category),
+    page: parsePage(first(raw.page)),
+    tagKey: first(raw.tag),
+  });
 
   return (
     <main className="mx-auto w-full max-w-[90rem] px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
@@ -93,21 +59,21 @@ export default async function Home({ searchParams }: HomeProps) {
       </div>
 
       <PromptFilters
-        activeCategory={activeCategory}
-        activeTag={activeTag}
-        categories={categories}
-        categoryAllCount={categoryEntries.length}
-        filteredCount={filteredEntries.length}
-        tagAllCount={tagEntries.length}
-        tags={tags}
+        activeCategory={data.activeCategory}
+        activeTag={data.activeTag}
+        categories={data.categories}
+        categoryAllCount={data.categoryAllCount}
+        filteredCount={data.filteredCount}
+        tagAllCount={data.tagAllCount}
+        tags={data.tags}
       />
 
       <section
         aria-label="精选文生图提示词"
         className="columns-1 gap-6 md:columns-2 2xl:columns-3"
       >
-        {filteredEntries.length ? (
-          filteredEntries.map((entry) => (
+        {data.entries.length ? (
+          data.entries.map((entry) => (
             <PromptEntry key={entry.slug} entry={entry} />
           ))
         ) : (
@@ -119,6 +85,47 @@ export default async function Home({ searchParams }: HomeProps) {
           </div>
         )}
       </section>
+
+      {data.totalPages > 1 ? (
+        <nav
+          aria-label="作品分页"
+          className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-6 sm:mt-8"
+        >
+          {data.page > 1 ? (
+            <Link
+              className={cn(buttonVariants({ variant: "outline" }), "rounded-sm")}
+              href={pageHref(
+                data.page - 1,
+                data.activeCategory,
+                data.activeTag,
+              )}
+            >
+              <ArrowLeft aria-hidden="true" />
+              上一页
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="text-sm tabular-nums text-muted-foreground">
+            第 {Math.min(data.page, data.totalPages)} / {data.totalPages} 页
+          </span>
+          {data.page < data.totalPages ? (
+            <Link
+              className={cn(buttonVariants({ variant: "outline" }), "rounded-sm")}
+              href={pageHref(
+                data.page + 1,
+                data.activeCategory,
+                data.activeTag,
+              )}
+            >
+              下一页
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      ) : null}
     </main>
   );
 }

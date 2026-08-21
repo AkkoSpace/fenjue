@@ -3,10 +3,10 @@ import Link from "next/link";
 
 import { PromptGallery } from "@/components/prompt-gallery";
 import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
-import type { PromptEntryData } from "@/lib/content/types";
+import type { PromptCardData } from "@/lib/content/types";
 
 interface PromptEntryProps {
-  entry: PromptEntryData;
+  entry: PromptCardData;
 }
 
 export function PromptEntry({ entry }: PromptEntryProps) {

@@ -14,7 +14,11 @@ import type {
   TaxonomyTag,
   TaxonomyTagKind,
 } from "@/lib/content/taxonomy";
-import type { PromptEntryData, PromptImage } from "@/lib/content/types";
+import type {
+  PromptCardData,
+  PromptEntryData,
+  PromptImage,
+} from "@/lib/content/types";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
 interface PromptImageRow {
@@ -40,6 +44,37 @@ interface PromptRow {
   slug: string;
   source_url: string;
   title: string;
+}
+
+interface PromptCardRow {
+  is_nsfw: boolean;
+  prompt_images: PromptImageRow[];
+  slug: string;
+  title: string;
+}
+
+interface PromptFacetOption {
+  count: number;
+  key: string;
+  name: string;
+  sortOrder: number;
+}
+
+interface PromptFacets {
+  categories: PromptFacetOption[];
+  categoryAllCount: number;
+  filteredCount: number;
+  tagAllCount: number;
+  tags: PromptFacetOption[];
+}
+
+export interface PromptPageData extends PromptFacets {
+  activeCategory?: string;
+  activeTag?: string;
+  entries: PromptCardData[];
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 interface CategoryRow {
@@ -121,6 +156,94 @@ function tagFromRelation(relation: TagRow | TagRow[]) {
   return tagFromRow(row);
 }
 
+function promptFromRow(row: PromptRow, r2BaseUrl: string): PromptEntryData {
+  return {
+    author: {
+      name: row.author_name,
+      url: row.author_url,
+    },
+    category: categoryFromRelation(row.category),
+    contentRelation: row.content_relation,
+    images: [...row.prompt_images]
+      .sort((a, b) => a.position - b.position)
+      .map((image) => r2Image(r2BaseUrl, image.object_key, image)),
+    isNsfw: row.is_nsfw,
+    prompt: row.prompt,
+    slug: row.slug,
+    sourceUrl: row.source_url,
+    tags: row.prompt_tags
+      .map(({ tag }) => tagFromRelation(tag))
+      .sort((left, right) => left.sortOrder - right.sortOrder),
+    title: row.title,
+    verifiedTools: normalizeAiToolKeys(
+      row.prompt_ai_tools.map((tool) => tool.tool_key),
+    ),
+  };
+}
+
+function promptCardFromRow(
+  row: PromptCardRow,
+  r2BaseUrl: string,
+): PromptCardData {
+  return {
+    images: [...row.prompt_images]
+      .sort((a, b) => a.position - b.position)
+      .map((image) => r2Image(r2BaseUrl, image.object_key, image)),
+    isNsfw: row.is_nsfw,
+    slug: row.slug,
+    title: row.title,
+  };
+}
+
+const PROMPT_SELECT =
+  "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))";
+const PROMPT_CARD_SELECT =
+  "slug,title,is_nsfw,prompt_images(position,object_key,alt,width,height)";
+
+export const PROMPT_PAGE_SIZE = 24;
+
+function positivePage(value: number) {
+  return Number.isSafeInteger(value) && value > 0 ? Math.min(value, 9999) : 1;
+}
+
+function isFacetOption(value: unknown): value is PromptFacetOption {
+  if (!value || typeof value !== "object") return false;
+  const option = value as Record<string, unknown>;
+  return (
+    typeof option.key === "string" &&
+    typeof option.name === "string" &&
+    Number.isSafeInteger(option.count) &&
+    Number.isSafeInteger(option.sortOrder)
+  );
+}
+
+function normalizeFacets(value: unknown): PromptFacets {
+  if (!value || typeof value !== "object") {
+    throw new Error("Prompt facets are missing");
+  }
+
+  const facets = value as Record<string, unknown>;
+  const categories = Array.isArray(facets.categories)
+    ? facets.categories.filter(isFacetOption)
+    : [];
+  const tags = Array.isArray(facets.tags)
+    ? facets.tags.filter(isFacetOption)
+    : [];
+
+  return {
+    categories,
+    categoryAllCount:
+      typeof facets.categoryAllCount === "number"
+        ? facets.categoryAllCount
+        : 0,
+    filteredCount:
+      typeof facets.filteredCount === "number" ? facets.filteredCount : 0,
+    tagAllCount:
+      typeof facets.tagAllCount === "number" ? facets.tagAllCount : 0,
+    tags,
+  };
+}
+
 export async function getContentTaxonomy(): Promise<ContentTaxonomy> {
   "use cache";
   cacheLife("hours");
@@ -156,55 +279,104 @@ export async function getContentTaxonomy(): Promise<ContentTaxonomy> {
   return { categories, tags };
 }
 
-export async function getPrompts(): Promise<PromptEntryData[]> {
+export async function getPromptPage({
+  categoryKey,
+  page: requestedPage,
+  tagKey,
+}: {
+  categoryKey?: string;
+  page: number;
+  tagKey?: string;
+}): Promise<PromptPageData> {
   "use cache";
   cacheLife("minutes");
   cacheTag("prompts");
 
   const r2BaseUrl = getR2PublicBaseUrl();
   const supabase = publicContentClient();
-
-  const { data, error } = await supabase
+  const taxonomy = await getContentTaxonomy();
+  const activeCategory = taxonomy.categories.some(
+    (category) => category.key === categoryKey,
+  )
+    ? categoryKey
+    : undefined;
+  const activeTag = taxonomy.tags.some((tag) => tag.key === tagKey)
+    ? tagKey
+    : undefined;
+  const page = positivePage(requestedPage);
+  const from = (page - 1) * PROMPT_PAGE_SIZE;
+  let listQuery = supabase
     .from("prompts")
     .select(
-      "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
+      activeTag
+        ? `${PROMPT_CARD_SELECT},selected_tag:prompt_tags!inner(tag_key)`
+        : PROMPT_CARD_SELECT,
+      { count: "exact" },
     )
     .eq("published", true)
-    .order("published_at", { ascending: false });
+    .order("published_at", { ascending: false })
+    .range(from, from + PROMPT_PAGE_SIZE - 1);
+
+  if (activeCategory) {
+    listQuery = listQuery.eq("category_key", activeCategory);
+  }
+
+  if (activeTag) {
+    listQuery = listQuery.eq("selected_tag.tag_key", activeTag);
+  }
+
+  const [listResult, facetResult] = await Promise.all([
+    listQuery,
+    supabase.rpc("get_prompt_facets", {
+      p_category_key: activeCategory ?? null,
+      p_tag_key: activeTag ?? null,
+    }),
+  ]);
+  const error = listResult.error ?? facetResult.error;
 
   if (error) {
     console.error("Unable to load published prompts from Supabase", error);
     throw new Error("Unable to load published prompts from Supabase");
   }
 
-  return ((data ?? []) as unknown as PromptRow[]).map((row) => ({
-    author: {
-      name: row.author_name,
-      url: row.author_url,
-    },
-    category: categoryFromRelation(row.category),
-    contentRelation: row.content_relation,
-    images: [...row.prompt_images]
-      .sort((a, b) => a.position - b.position)
-      .map((image) => r2Image(r2BaseUrl, image.object_key, image)),
-    isNsfw: row.is_nsfw,
-    prompt: row.prompt,
-    slug: row.slug,
-    sourceUrl: row.source_url,
-    tags: row.prompt_tags
-      .map(({ tag }) => tagFromRelation(tag))
-      .sort((left, right) => left.sortOrder - right.sortOrder),
-    title: row.title,
-    verifiedTools: normalizeAiToolKeys(
-      row.prompt_ai_tools.map((tool) => tool.tool_key),
+  const facets = normalizeFacets(facetResult.data);
+  const total = listResult.count ?? facets.filteredCount;
+
+  return {
+    ...facets,
+    activeCategory,
+    activeTag,
+    entries: ((listResult.data ?? []) as unknown as PromptCardRow[]).map(
+      (row) => promptCardFromRow(row, r2BaseUrl),
     ),
-  }));
+    page,
+    pageSize: PROMPT_PAGE_SIZE,
+    totalPages: Math.max(1, Math.ceil(total / PROMPT_PAGE_SIZE)),
+  };
 }
 
 export async function getPromptBySlug(
   slug: string,
 ): Promise<PromptEntryData | undefined> {
-  const prompts = await getPrompts();
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("prompts");
 
-  return prompts.find((prompt) => prompt.slug === slug);
+  const r2BaseUrl = getR2PublicBaseUrl();
+  const supabase = publicContentClient();
+  const { data, error } = await supabase
+    .from("prompts")
+    .select(PROMPT_SELECT)
+    .eq("published", true)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Unable to load prompt from Supabase", error);
+    throw new Error("Unable to load prompt from Supabase");
+  }
+
+  return data
+    ? promptFromRow(data as unknown as PromptRow, r2BaseUrl)
+    : undefined;
 }

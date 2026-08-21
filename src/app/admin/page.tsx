@@ -113,6 +113,12 @@ function AdminCover({
   );
 }
 
+function importStatusLabel(status: "missing_media" | "needs_review" | "ready") {
+  if (status === "missing_media") return "待补图片";
+  if (status === "needs_review") return "待复核";
+  return "已导入";
+}
+
 export default function AdminPage(props: AdminPageProps) {
   return (
     <Suspense fallback={<AdminFallback />}>
@@ -318,7 +324,18 @@ async function AdminContent({ searchParams }: AdminPageProps) {
                           .join(" / ")}`
                       : ""}
                     {prompt.isNsfw ? " · NSFW" : ""}
+                    {prompt.importStatus
+                      ? ` · ${importStatusLabel(prompt.importStatus)}`
+                      : ""}
                   </p>
+                  {prompt.importNote ? (
+                    <p
+                      className="mt-1 truncate text-xs text-amber-800"
+                      title={prompt.importNote}
+                    >
+                      {prompt.importNote}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="col-start-2 min-w-0 md:col-start-auto">
