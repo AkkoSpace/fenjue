@@ -21,6 +21,7 @@ export type PromptImportStatus = "missing_media" | "needs_review" | "ready";
 interface PromptImageRow {
   alt: string;
   height: number;
+  id: string;
   object_key: string;
   position: number;
   width: number;
@@ -90,6 +91,57 @@ export interface AdminPromptListItem {
   verifiedTools: AiToolKey[];
 }
 
+export interface AdminPromptDetail {
+  authorName: string;
+  authorUrl: string;
+  category: TaxonomyCategory;
+  contentRelation: ContentRelation;
+  createdAt: string;
+  id: string;
+  images: {
+    alt: string;
+    height: number;
+    id: string;
+    objectKey: string;
+    position: number;
+    src: string;
+    width: number;
+  }[];
+  isNsfw: boolean;
+  prompt: string;
+  published: boolean;
+  slug: string;
+  sourceUrl: string;
+  tags: TaxonomyTag[];
+  title: string;
+  userId: string | null;
+  verifiedTools: AiToolKey[];
+}
+
+export interface AdminUserListItem {
+  createdAt: string;
+  displayName: string | null;
+  email: string;
+  emailConfirmedAt: string | null;
+  id: string;
+  isSuperAdmin: boolean;
+  lastSignInAt: string | null;
+  role: "admin" | "user";
+}
+
+export interface AdminTaxonomyItem {
+  active: boolean;
+  key: string;
+  name: string;
+  publishedCount: number;
+  sortOrder: number;
+  usageCount: number;
+}
+
+export interface AdminTaxonomyTag extends AdminTaxonomyItem {
+  kind: TaxonomyTagKind;
+}
+
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -132,7 +184,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
   let listQuery = supabase
     .from("prompts")
     .select(
-      "id,slug,title,author_name,source_url,is_nsfw,content_relation,import_status,import_note,published,published_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
+      "id,slug,title,author_name,source_url,is_nsfw,content_relation,import_status,import_note,published,published_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
@@ -266,5 +318,200 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
     query,
     status,
     total: listResult.count ?? 0,
+  };
+}
+
+export async function getAdminPrompt(id: string) {
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase
+    .from("prompts")
+    .select(
+      "id,user_id,slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("Unable to load admin prompt", error.code);
+    throw new Error("作品加载失败，请稍后重试。");
+  }
+
+  if (!data) return null;
+
+  const row = data as unknown as PromptAdminRow & {
+    author_url: string;
+    prompt: string;
+    user_id: string | null;
+  };
+  const category = Array.isArray(row.category)
+    ? row.category[0]
+    : row.category;
+
+  if (!category) {
+    throw new Error("作品缺少有效分类，请先检查分类数据。");
+  }
+
+  const r2BaseUrl = process.env.R2_PUBLIC_BASE_URL?.replace(/\/$/, "");
+  if (!r2BaseUrl) {
+    throw new Error("R2 公开地址尚未配置。");
+  }
+
+  return {
+    authorName: row.author_name,
+    authorUrl: row.author_url,
+    category: {
+      key: category.key,
+      name: category.name,
+      sortOrder: category.sort_order,
+    },
+    contentRelation: row.content_relation,
+    createdAt: row.created_at,
+    id: row.id,
+    images: [...row.prompt_images]
+      .sort((left, right) => left.position - right.position)
+      .map((image) => ({
+        alt: image.alt,
+        height: image.height,
+        id: image.id,
+        objectKey: image.object_key,
+        position: image.position,
+        src: `${r2BaseUrl}/${image.object_key}`,
+        width: image.width,
+      })),
+    isNsfw: row.is_nsfw,
+    prompt: row.prompt,
+    published: row.published,
+    slug: row.slug,
+    sourceUrl: row.source_url,
+    tags: row.prompt_tags
+      .map(({ tag }) => {
+        const normalized = Array.isArray(tag) ? tag[0] : tag;
+        if (!normalized) throw new Error("作品标签数据无效。");
+        return {
+          key: normalized.key,
+          kind: normalized.kind,
+          name: normalized.name,
+          sortOrder: normalized.sort_order,
+        };
+      })
+      .sort((left, right) => left.sortOrder - right.sortOrder),
+    title: row.title,
+    userId: row.user_id,
+    verifiedTools: normalizeAiToolKeys(
+      row.prompt_ai_tools.map((tool) => tool.tool_key),
+    ),
+  } satisfies AdminPromptDetail;
+}
+
+export async function getAdminOverview() {
+  const content = await getAdminPrompts({});
+  const { supabase } = await requireAdmin();
+  const [users, categories, tags] = await Promise.all([
+    supabase.from("profiles").select("id", { count: "exact", head: true }),
+    supabase.from("categories").select("key", { count: "exact", head: true }),
+    supabase.from("tags").select("key", { count: "exact", head: true }),
+  ]);
+
+  const error = users.error ?? categories.error ?? tags.error;
+  if (error) {
+    console.warn("Unable to load admin overview", error.code);
+  }
+
+  return {
+    content,
+    counts: {
+      categories: categories.count ?? 0,
+      tags: tags.count ?? 0,
+      users: users.count ?? 0,
+    },
+    recent: content.items.slice(0, 5),
+  };
+}
+
+export interface AdminUserSearchParams {
+  page?: string | string[];
+  q?: string | string[];
+}
+
+export async function getAdminUsers(raw: AdminUserSearchParams) {
+  const { profile, supabase } = await requireAdmin();
+  const page = parsePage(first(raw.page));
+  const query = cleanSearch(first(raw.q));
+  const from = (page - 1) * PAGE_SIZE;
+  const { data, error } = await supabase.rpc("admin_list_users", {
+    p_limit: PAGE_SIZE,
+    p_offset: from,
+    p_search: query || null,
+  });
+
+  if (error) {
+    console.warn("Unable to load admin users", error.code);
+    return {
+      error: "用户列表加载失败，请确认后台管理迁移已经执行。",
+      items: [] as AdminUserListItem[],
+      page,
+      pageSize: PAGE_SIZE,
+      profile,
+      query,
+      total: 0,
+    };
+  }
+
+  const rows = (data ?? []) as {
+    created_at: string;
+    display_name: string | null;
+    email: string;
+    email_confirmed_at: string | null;
+    id: string;
+    is_super_admin: boolean;
+    last_sign_in_at: string | null;
+    role: "admin" | "user";
+    total_count: number;
+  }[];
+
+  return {
+    error: undefined,
+    items: rows.map((row) => ({
+      createdAt: row.created_at,
+      displayName: row.display_name,
+      email: row.email,
+      emailConfirmedAt: row.email_confirmed_at,
+      id: row.id,
+      isSuperAdmin: row.is_super_admin,
+      lastSignInAt: row.last_sign_in_at,
+      role: row.role,
+    })),
+    page,
+    pageSize: PAGE_SIZE,
+    profile,
+    query,
+    total: Number(rows[0]?.total_count ?? 0),
+  };
+}
+
+export async function getAdminTaxonomy() {
+  const { profile, supabase } = await requireAdmin();
+  const { data, error } = await supabase.rpc("admin_get_taxonomy");
+
+  if (error) {
+    console.warn("Unable to load admin taxonomy", error.code);
+    return {
+      categories: [] as AdminTaxonomyItem[],
+      error: "分类数据加载失败，请确认后台管理迁移已经执行。",
+      profile,
+      tags: [] as AdminTaxonomyTag[],
+    };
+  }
+
+  const result = (data ?? {}) as {
+    categories?: AdminTaxonomyItem[];
+    tags?: AdminTaxonomyTag[];
+  };
+
+  return {
+    categories: result.categories ?? [],
+    error: undefined,
+    profile,
+    tags: result.tags ?? [],
   };
 }
