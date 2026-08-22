@@ -7,6 +7,10 @@ import {
   normalizeAiToolKeys,
   type AiToolKey,
 } from "@/lib/content/ai-tools";
+import {
+  EMPTY_PROMPT_ENGAGEMENT,
+  type PromptEngagementMetrics,
+} from "@/lib/content/engagement";
 import type { ContentRelation } from "@/lib/content/relation";
 import type {
   ContentTaxonomy,
@@ -34,6 +38,7 @@ interface PromptRow {
   author_url: string;
   category: CategoryRow | CategoryRow[];
   content_relation: ContentRelation;
+  engagement: EngagementRow | EngagementRow[] | null;
   is_nsfw: boolean;
   prompt: string;
   prompt_images: PromptImageRow[];
@@ -45,6 +50,16 @@ interface PromptRow {
   slug: string;
   source_url: string;
   title: string;
+}
+
+interface EngagementRow {
+  copy_count: number;
+  like_count: number;
+  reaction_di_count: number;
+  reaction_huang_count: number;
+  reaction_tian_count: number;
+  reaction_xuan_count: number;
+  view_count: number;
 }
 
 interface PromptCardRow {
@@ -168,6 +183,32 @@ function tagFromRelation(relation: TagRow | TagRow[]) {
   return tagFromRow(row);
 }
 
+function engagementCount(value: number | undefined) {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0
+    ? value
+    : 0;
+}
+
+function engagementFromRelation(
+  relation: EngagementRow | EngagementRow[] | null,
+): PromptEngagementMetrics {
+  const row = Array.isArray(relation) ? relation[0] : relation;
+
+  if (!row) return EMPTY_PROMPT_ENGAGEMENT;
+
+  return {
+    copies: engagementCount(row.copy_count),
+    likes: engagementCount(row.like_count),
+    reactions: {
+      di: engagementCount(row.reaction_di_count),
+      huang: engagementCount(row.reaction_huang_count),
+      tian: engagementCount(row.reaction_tian_count),
+      xuan: engagementCount(row.reaction_xuan_count),
+    },
+    views: engagementCount(row.view_count),
+  };
+}
+
 function promptFromRow(row: PromptRow, r2BaseUrl: string): PromptEntryData {
   return {
     author: {
@@ -176,6 +217,7 @@ function promptFromRow(row: PromptRow, r2BaseUrl: string): PromptEntryData {
     },
     category: categoryFromRelation(row.category),
     contentRelation: row.content_relation,
+    engagement: engagementFromRelation(row.engagement),
     images: [...row.prompt_images]
       .sort((a, b) => a.position - b.position)
       .map((image) => r2Image(r2BaseUrl, image.object_key, image)),
@@ -209,7 +251,7 @@ function promptCardFromRow(
 }
 
 const PROMPT_SELECT =
-  "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))";
+  "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published_at,category:categories!prompts_category_key_fkey(key,name,sort_order),engagement:prompt_engagement_totals(view_count,copy_count,like_count,reaction_tian_count,reaction_di_count,reaction_xuan_count,reaction_huang_count),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))";
 const PROMPT_CARD_SELECT =
   "slug,title,is_nsfw,prompt_images(position,object_key,alt,width,height)";
 

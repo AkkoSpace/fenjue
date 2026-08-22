@@ -1,6 +1,10 @@
 import {
   ArrowRight,
+  Copy,
+  Eye,
+  Flame,
   FolderTree,
+  Heart,
   Images,
   ImageUp,
   Users,
@@ -73,6 +77,32 @@ async function OverviewContent() {
       value: data.counts.tags,
     },
   ];
+  const engagementStats = [
+    {
+      detail: "同一访客每天每条作品去重一次",
+      icon: Eye,
+      label: "作品浏览",
+      value: data.engagement.views,
+    },
+    {
+      detail: "成功复制提示词的去重次数",
+      icon: Copy,
+      label: "提示词复制",
+      value: data.engagement.copies,
+    },
+    {
+      detail: "登录用户表达的喜欢",
+      icon: Heart,
+      label: "喜欢",
+      value: data.engagement.likes,
+    },
+    {
+      detail: "天地玄黄四阶反馈总数",
+      icon: Flame,
+      label: "品阶反馈",
+      value: data.engagement.reactions,
+    },
+  ];
 
   return (
     <main>
@@ -110,6 +140,36 @@ async function OverviewContent() {
             </div>
           );
         })}
+      </section>
+
+      <section aria-labelledby="engagement-heading" className="mt-9">
+        <div className="border-b border-border pb-3">
+          <p className="text-xs tracking-[0.16em] text-primary uppercase">
+            Engagement · 互动
+          </p>
+          <h2 className="mt-1 font-serif text-2xl" id="engagement-heading">
+            作品互动概况
+          </h2>
+        </div>
+        <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
+          {engagementStats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div className="bg-background p-5" key={stat.label}>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <Icon aria-hidden="true" className="size-4 text-primary" />
+                </div>
+                <p className="mt-5 text-3xl font-medium tabular-nums text-foreground">
+                  {stat.value.toLocaleString("zh-CN")}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  {stat.detail}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       <div className="mt-10 grid items-start gap-10 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">

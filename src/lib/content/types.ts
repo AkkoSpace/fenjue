@@ -1,5 +1,6 @@
 import type { AiToolKey } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
+import type { PromptEngagementMetrics } from "@/lib/content/engagement";
 import type {
   TaxonomyCategory,
   TaxonomyTag,
@@ -22,6 +23,7 @@ export interface PromptEntryData {
   author: PromptAuthor;
   category: TaxonomyCategory;
   contentRelation: ContentRelation;
+  engagement: PromptEngagementMetrics;
   images: PromptImage[];
   isNsfw: boolean;
   publishedAt: string;

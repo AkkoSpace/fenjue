@@ -604,16 +604,26 @@ export async function getAdminReviewNavigation({
 export async function getAdminOverview() {
   const content = await getAdminPrompts({});
   const { supabase } = await requireAdmin();
-  const [users, categories, tags] = await Promise.all([
+  const [users, categories, tags, engagement] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("categories").select("key", { count: "exact", head: true }),
     supabase.from("tags").select("key", { count: "exact", head: true }),
+    supabase.rpc("admin_get_engagement_overview"),
   ]);
 
-  const error = users.error ?? categories.error ?? tags.error;
+  const error = users.error ?? categories.error ?? tags.error ?? engagement.error;
   if (error) {
     console.warn("Unable to load admin overview", error.code);
   }
+
+  const rawEngagement =
+    engagement.data && typeof engagement.data === "object"
+      ? (engagement.data as Record<string, unknown>)
+      : {};
+  const count = (value: unknown) =>
+    typeof value === "number" && Number.isSafeInteger(value) && value > 0
+      ? value
+      : 0;
 
   return {
     content,
@@ -621,6 +631,12 @@ export async function getAdminOverview() {
       categories: categories.count ?? 0,
       tags: tags.count ?? 0,
       users: users.count ?? 0,
+    },
+    engagement: {
+      copies: count(rawEngagement.copies),
+      likes: count(rawEngagement.likes),
+      reactions: count(rawEngagement.reactions),
+      views: count(rawEngagement.views),
     },
     recent: content.items.slice(0, 5),
   };

@@ -4,6 +4,7 @@ import { Check, Copy, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { usePromptEngagement } from "@/components/prompt-engagement";
 
 type CopyState = "idle" | "copied" | "error";
 
@@ -12,6 +13,7 @@ interface PromptCopyButtonProps {
 }
 
 export function PromptCopyButton({ prompt }: PromptCopyButtonProps) {
+  const engagement = usePromptEngagement();
   const [state, setState] = useState<CopyState>("idle");
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -27,6 +29,7 @@ export function PromptCopyButton({ prompt }: PromptCopyButtonProps) {
     try {
       await navigator.clipboard.writeText(prompt);
       setState("copied");
+      void engagement?.recordCopy();
     } catch {
       setState("error");
     }
