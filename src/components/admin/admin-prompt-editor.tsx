@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { ContentRelationSelector } from "@/components/submission/content-relation-selector";
+import { EditorialSelector } from "@/components/admin/editorial-selector";
 import { TaxonomySelector } from "@/components/submission/taxonomy-selector";
 import { VerifiedToolsSelector } from "@/components/submission/verified-tools-selector";
 import { Button } from "@/components/ui/button";
@@ -23,8 +24,10 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   updateAdminPrompt,
+  type AdminCollectionMembershipInput,
   type UpdateAdminPromptImageInput,
 } from "@/lib/admin/actions";
+import type { AdminCollection } from "@/lib/admin/editorial-queries";
 import type { AdminPromptDetail } from "@/lib/admin/queries";
 import type { AiToolKey } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
@@ -37,6 +40,7 @@ import {
 
 interface AdminPromptEditorProps {
   categories: TaxonomyCategory[];
+  collections: AdminCollection[];
   initial: AdminPromptDetail;
   tags: TaxonomyTag[];
 }
@@ -93,6 +97,7 @@ function initialImages(prompt: AdminPromptDetail): EditorImage[] {
 
 export function AdminPromptEditor({
   categories,
+  collections,
   initial,
   tags,
 }: AdminPromptEditorProps) {
@@ -109,6 +114,14 @@ export function AdminPromptEditor({
   const [tagKeys, setTagKeys] = useState(initial.tags.map((tag) => tag.key));
   const [verifiedTools, setVerifiedTools] =
     useState<AiToolKey[]>(initial.verifiedTools);
+  const [featured, setFeatured] = useState(initial.featured);
+  const [featureRecommendation, setFeatureRecommendation] = useState(
+    initial.featureRecommendation,
+  );
+  const [featurePosition, setFeaturePosition] = useState(initial.featurePosition);
+  const [collectionMemberships, setCollectionMemberships] = useState<
+    AdminCollectionMembershipInput[]
+  >(initial.collectionMemberships);
   const [images, setImages] = useState(() => initialImages(initial));
   const [selectedImageId, setSelectedImageId] = useState(
     () => initial.images[0]?.id ?? "",
@@ -277,7 +290,11 @@ export function AdminPromptEditor({
         authorName,
         authorUrl,
         categoryKey,
+        collectionMemberships,
         contentRelation,
+        featured,
+        featurePosition,
+        featureRecommendation,
         id: initial.id,
         images: imageInputs,
         isNsfw,
@@ -358,6 +375,18 @@ export function AdminPromptEditor({
               </div>
               <ContentRelationSelector disabled={isSaving} onChange={setContentRelation} value={contentRelation} />
               <VerifiedToolsSelector disabled={isSaving} onChange={setVerifiedTools} value={verifiedTools} />
+              <EditorialSelector
+                collections={collections}
+                disabled={isSaving}
+                featured={featured}
+                featurePosition={featurePosition}
+                featureRecommendation={featureRecommendation}
+                memberships={collectionMemberships}
+                onFeaturedChange={setFeatured}
+                onFeaturePositionChange={setFeaturePosition}
+                onFeatureRecommendationChange={setFeatureRecommendation}
+                onMembershipsChange={setCollectionMemberships}
+              />
             </div>
           </section>
         </div>

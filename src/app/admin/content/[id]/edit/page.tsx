@@ -20,6 +20,7 @@ import { PromptReviewBadge } from "@/components/prompt-review-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { reviewPrompt } from "@/lib/admin/actions";
+import { getAdminCollections } from "@/lib/admin/editorial-queries";
 import {
   type AdminPromptSearchParams,
   type AdminReviewNavigation,
@@ -81,9 +82,10 @@ export default function EditPromptPage(props: EditPromptPageProps) {
 
 async function EditPromptContent({ params, searchParams }: EditPromptPageProps) {
   const { id } = await params;
-  const [prompt, taxonomy, rawMessages] = await Promise.all([
+  const [prompt, taxonomy, collections, rawMessages] = await Promise.all([
     getAdminPrompt(id),
     getContentTaxonomy(),
+    getAdminCollections(),
     searchParams,
   ]);
   if (!prompt) notFound();
@@ -265,7 +267,7 @@ async function EditPromptContent({ params, searchParams }: EditPromptPageProps) 
           </details>
         ) : null}
       </section>
-      <AdminPromptEditor categories={taxonomy.categories} initial={prompt} key={`${prompt.title}:${prompt.images.map((image) => image.id).join(":")}`} tags={taxonomy.tags} />
+      <AdminPromptEditor categories={taxonomy.categories} collections={collections} initial={prompt} key={`${prompt.title}:${prompt.images.map((image) => image.id).join(":")}`} tags={taxonomy.tags} />
     </main>
   );
 }

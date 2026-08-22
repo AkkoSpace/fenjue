@@ -1,4 +1,4 @@
-import { ArrowRight, LogOut, ShieldCheck } from "lucide-react";
+import { ArrowRight, LogOut, MessageSquareText, ShieldCheck } from "lucide-react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -48,7 +48,7 @@ async function AccountContent({ searchParams }: AuthPageProps) {
     redirect("/login?next=/account");
   }
 
-  const [profileResult, submissionResult, { message }] = await Promise.all([
+  const [profileResult, submissionResult, commentResult, { message }] = await Promise.all([
     supabase
       .from("profiles")
       .select("display_name,is_super_admin,role")
@@ -60,11 +60,22 @@ async function AccountContent({ searchParams }: AuthPageProps) {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("prompt_comments")
+      .select(
+        "id,body,review_status,review_note,created_at,prompt:prompts!inner(slug,title,published,review_status)",
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
     getAuthPageState(searchParams),
   ]);
   const profile = profileResult.data;
   if (submissionResult.error) {
     console.warn("Unable to load account submissions", submissionResult.error.code);
+  }
+  if (commentResult.error) {
+    console.warn("Unable to load account comments", commentResult.error.code);
   }
   const submissions = (submissionResult.data ?? []) as {
     created_at: string;
@@ -75,6 +86,28 @@ async function AccountContent({ searchParams }: AuthPageProps) {
     slug: string;
     title: string;
   }[];
+  const comments = (commentResult.data ?? []).flatMap((value) => {
+    const row = value as unknown as {
+      body: string;
+      created_at: string;
+      id: string;
+      prompt: {
+        published: boolean;
+        review_status: PromptReviewStatus;
+        slug: string;
+        title: string;
+      } | {
+        published: boolean;
+        review_status: PromptReviewStatus;
+        slug: string;
+        title: string;
+      }[];
+      review_note: string | null;
+      review_status: PromptReviewStatus;
+    };
+    const prompt = Array.isArray(row.prompt) ? row.prompt[0] : row.prompt;
+    return prompt ? [{ ...row, prompt }] : [];
+  });
   const isAdmin = profile?.role === "admin";
   const identity = profile?.is_super_admin
     ? "超级管理员"
@@ -84,7 +117,7 @@ async function AccountContent({ searchParams }: AuthPageProps) {
 
   return (
     <AuthShell
-      description="你的账户不会影响公开浏览。后续收藏与 Reaction 会在这里归属于同一身份。"
+      description="你的账户不会影响公开浏览；投稿、喜欢、品阶与实测心得归属于同一身份。"
       eyebrow="Account · 账户"
       message={message}
       title={profile?.display_name || "我的账户"}
@@ -173,6 +206,51 @@ async function AccountContent({ searchParams }: AuthPageProps) {
         ) : (
           <p className="py-5 text-sm leading-6 text-muted-foreground">
             还没有投稿。提交后可以在这里查看审核状态。
+          </p>
+        )}
+      </section>
+
+      <section aria-labelledby="comments-heading" className="mt-7">
+        <div className="flex items-end justify-between gap-4 border-b border-border pb-3">
+          <div>
+            <p className="text-xs tracking-[0.16em] text-primary uppercase">Field Notes</p>
+            <h2 className="mt-1 font-serif text-xl" id="comments-heading">我的实测心得</h2>
+          </div>
+          <MessageSquareText aria-hidden="true" className="size-4 text-primary" />
+        </div>
+        {comments.length ? (
+          <div className="divide-y divide-border">
+            {comments.map((comment) => {
+              const publicPrompt =
+                comment.prompt.published &&
+                comment.prompt.review_status === "approved";
+              return (
+                <article className="py-4" key={comment.id}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      {publicPrompt ? (
+                        <Link className="text-sm font-medium text-foreground hover:text-primary" href={`/prompts/${comment.prompt.slug}#comments` as Route}>
+                          {comment.prompt.title}
+                        </Link>
+                      ) : (
+                        <h3 className="text-sm font-medium text-foreground">{comment.prompt.title}</h3>
+                      )}
+                      <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">{comment.body}</p>
+                    </div>
+                    <PromptReviewBadge className="shrink-0" status={comment.review_status} />
+                  </div>
+                  {comment.review_status === "rejected" && comment.review_note ? (
+                    <p className="mt-2 border-l-2 border-destructive/40 pl-3 text-xs leading-5 text-muted-foreground">
+                      {comment.review_note}
+                    </p>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="py-5 text-sm leading-6 text-muted-foreground">
+            还没有提交实测心得。打开任意公开作品即可记录实际生成体验。
           </p>
         )}
       </section>

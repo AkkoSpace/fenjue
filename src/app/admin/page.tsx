@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  BookOpenText,
   Copy,
   Eye,
   Flame,
@@ -7,6 +8,7 @@ import {
   Heart,
   Images,
   ImageUp,
+  MessageSquareText,
   Users,
 } from "lucide-react";
 import type { Metadata, Route } from "next";
@@ -63,6 +65,18 @@ async function OverviewContent() {
       icon: Users,
       label: "用户",
       value: data.counts.users,
+    },
+    {
+      detail: "编辑主题目录",
+      icon: BookOpenText,
+      label: "专栏",
+      value: data.counts.collections,
+    },
+    {
+      detail: "等待管理员判断",
+      icon: MessageSquareText,
+      label: "待审评价",
+      value: data.counts.pendingComments,
     },
     {
       detail: "主分类",
@@ -124,7 +138,7 @@ async function OverviewContent() {
         title="管理总览"
       />
 
-      <section aria-label="关键数据" className="mt-8 grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="关键数据" className="mt-8 grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -226,6 +240,8 @@ async function OverviewContent() {
           <div className="mt-5 divide-y divide-border">
             {[
               ["审核内容", "检查投稿、编辑内容并给出审核结论", "/admin/content?status=pending"],
+              ["审核评价", "处理用户提交的实测心得", "/admin/comments?status=pending"],
+              ["编纂专栏", "创建主题目录并控制公开状态", "/admin/collections"],
               ["查看用户", "确认邮箱状态与调整管理员权限", "/admin/users"],
               ["维护分类", "管理主分类、风格、形式与主题标签", "/admin/taxonomy"],
             ].map(([label, description, href]) => (

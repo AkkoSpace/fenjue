@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
+import { FeaturedPrompts } from "@/components/featured-prompts";
 import { PromptEntry } from "@/components/prompt-entry";
 import { PromptFilters } from "@/components/prompt-filters";
 import { buttonVariants } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import {
   getPromptPage,
   type PromptPageData,
 } from "@/lib/content/queries";
+import { getFeaturedPrompts } from "@/lib/content/editorial-queries";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -144,6 +146,10 @@ export default async function Home({ searchParams }: HomeProps) {
   }
 
   const copy = listingCopy(data);
+  const featured =
+    data.page === 1 && !data.activeCategory && !data.activeTag
+      ? await getFeaturedPrompts()
+      : [];
   const canonical = pageHref(
     data.page,
     data.activeCategory,
@@ -182,6 +188,8 @@ export default async function Home({ searchParams }: HomeProps) {
           看见喜欢的画面，复制提示词，去你常用的 AI 工具里重新生成。
         </p>
       </div>
+
+      <FeaturedPrompts items={featured} />
 
       <PromptFilters
         activeCategory={data.activeCategory}

@@ -49,11 +49,19 @@ interface PromptAdminRow {
     sort_order: number;
   }[];
   content_relation: ContentRelation;
+  collection_prompts: { collection_id: string; position: number }[];
   created_at: string;
   id: string;
   import_note: string | null;
   import_status: PromptImportStatus | null;
   is_nsfw: boolean;
+  feature: {
+    position: number;
+    recommendation: string;
+  } | {
+    position: number;
+    recommendation: string;
+  }[] | null;
   prompt_images: PromptImageRow[];
   prompt_ai_tools: { tool_key: AiToolKey }[];
   prompt_tags: {
@@ -109,6 +117,7 @@ export interface AdminPromptDetail {
   authorName: string;
   authorUrl: string;
   category: TaxonomyCategory;
+  collectionMemberships: { collectionId: string; position: number }[];
   contentRelation: ContentRelation;
   createdAt: string;
   id: string;
@@ -122,6 +131,9 @@ export interface AdminPromptDetail {
     width: number;
   }[];
   isNsfw: boolean;
+  featurePosition: number;
+  featureRecommendation: string;
+  featured: boolean;
   prompt: string;
   published: boolean;
   reviewNote: string | null;
@@ -399,7 +411,7 @@ export async function getAdminPrompt(id: string) {
     supabase
       .from("prompts")
       .select(
-        "id,user_id,slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published,published_at,review_status,review_note,reviewed_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
+        "id,user_id,slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published,published_at,review_status,review_note,reviewed_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),feature:prompt_features(recommendation,position),collection_prompts(collection_id,position),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -462,6 +474,8 @@ export async function getAdminPrompt(id: string) {
     throw new Error("R2 公开地址尚未配置。");
   }
 
+  const feature = Array.isArray(row.feature) ? row.feature[0] : row.feature;
+
   return {
     authorName: row.author_name,
     authorUrl: row.author_url,
@@ -470,6 +484,12 @@ export async function getAdminPrompt(id: string) {
       name: category.name,
       sortOrder: category.sort_order,
     },
+    collectionMemberships: [...row.collection_prompts]
+      .sort((left, right) => left.position - right.position)
+      .map((membership) => ({
+        collectionId: membership.collection_id,
+        position: membership.position,
+      })),
     contentRelation: row.content_relation,
     createdAt: row.created_at,
     id: row.id,
@@ -485,6 +505,9 @@ export async function getAdminPrompt(id: string) {
         width: image.width,
       })),
     isNsfw: row.is_nsfw,
+    featured: Boolean(feature),
+    featurePosition: feature?.position ?? 100,
+    featureRecommendation: feature?.recommendation ?? "",
     prompt: row.prompt,
     published: row.published,
     reviewNote: row.review_note,
@@ -604,14 +627,20 @@ export async function getAdminReviewNavigation({
 export async function getAdminOverview() {
   const content = await getAdminPrompts({});
   const { supabase } = await requireAdmin();
-  const [users, categories, tags, engagement] = await Promise.all([
+  const [users, categories, tags, collections, comments, engagement] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("categories").select("key", { count: "exact", head: true }),
     supabase.from("tags").select("key", { count: "exact", head: true }),
+    supabase.from("collections").select("id", { count: "exact", head: true }),
+    supabase
+      .from("prompt_comments")
+      .select("id", { count: "exact", head: true })
+      .eq("review_status", "pending"),
     supabase.rpc("admin_get_engagement_overview"),
   ]);
 
-  const error = users.error ?? categories.error ?? tags.error ?? engagement.error;
+  const error = users.error ?? categories.error ?? tags.error ??
+    collections.error ?? comments.error ?? engagement.error;
   if (error) {
     console.warn("Unable to load admin overview", error.code);
   }
@@ -629,6 +658,8 @@ export async function getAdminOverview() {
     content,
     counts: {
       categories: categories.count ?? 0,
+      collections: collections.count ?? 0,
+      pendingComments: comments.count ?? 0,
       tags: tags.count ?? 0,
       users: users.count ?? 0,
     },

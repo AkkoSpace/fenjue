@@ -17,8 +17,14 @@ export function SiteHeader() {
           <span className="font-serif text-lg tracking-[0.08em]">焚诀</span>
         </Link>
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground sm:gap-4">
           <span className="hidden sm:inline">卷一 · 文生图</span>
+          <Link
+            className="inline-flex min-h-11 items-center px-1 transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+            href="/collections"
+          >
+            专栏
+          </Link>
           <Suspense fallback={<AccountMenuFallback />}>
             <AccountMenu />
           </Suspense>

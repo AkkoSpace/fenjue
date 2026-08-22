@@ -2,6 +2,10 @@ import type { AiToolKey } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
 import type { PromptEngagementMetrics } from "@/lib/content/engagement";
 import type {
+  PromptCollectionLink,
+  PromptFeature,
+} from "@/lib/content/editorial";
+import type {
   TaxonomyCategory,
   TaxonomyTag,
 } from "@/lib/content/taxonomy";
@@ -22,8 +26,10 @@ export interface PromptAuthor {
 export interface PromptEntryData {
   author: PromptAuthor;
   category: TaxonomyCategory;
+  collections: PromptCollectionLink[];
   contentRelation: ContentRelation;
   engagement: PromptEngagementMetrics;
+  feature: PromptFeature | null;
   images: PromptImage[];
   isNsfw: boolean;
   publishedAt: string;

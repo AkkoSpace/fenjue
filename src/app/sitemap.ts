@@ -5,14 +5,16 @@ import {
   getContentTaxonomy,
   getPromptSitemapEntries,
 } from "@/lib/content/queries";
+import { getPublishedCollections } from "@/lib/content/editorial-queries";
 import { absoluteUrl } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection();
 
-  const [taxonomy, prompts] = await Promise.all([
+  const [taxonomy, prompts, collections] = await Promise.all([
     getContentTaxonomy(),
     getPromptSitemapEntries(),
+    getPublishedCollections(),
   ]);
 
   return [
@@ -21,6 +23,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
       url: absoluteUrl("/"),
     },
+    {
+      changeFrequency: "weekly",
+      priority: 0.8,
+      url: absoluteUrl("/collections"),
+    },
+    ...collections.map((collection) => ({
+      changeFrequency: "weekly" as const,
+      lastModified: collection.updatedAt,
+      priority: 0.7,
+      url: absoluteUrl(`/collections/${collection.slug}`),
+    })),
     ...taxonomy.categories.map((category) => ({
       changeFrequency: "daily" as const,
       priority: 0.8,

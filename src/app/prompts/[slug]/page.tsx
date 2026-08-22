@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
 import { PromptCopyButton } from "@/components/prompt-copy-button";
+import { PromptComments } from "@/components/prompt-comments";
 import {
   PromptEngagementBar,
   PromptEngagementProvider,
@@ -14,6 +15,10 @@ import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
 import { getAiToolOption } from "@/lib/content/ai-tools";
 import { getContentRelationOption } from "@/lib/content/relation";
 import { getPromptBySlug } from "@/lib/content/queries";
+import {
+  getOwnPromptComments,
+  getPublishedPromptComments,
+} from "@/lib/content/editorial-queries";
 import type { PromptEntryData } from "@/lib/content/types";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
@@ -95,6 +100,12 @@ export default async function PromptPage({ params }: PromptPageProps) {
     notFound();
   }
 
+  const [publishedCommentState, ownCommentState] = await Promise.all([
+    getPublishedPromptComments(entry.slug),
+    getOwnPromptComments(entry.slug),
+  ]);
+  const publishedComments = publishedCommentState.comments;
+
   const contentRelation = getContentRelationOption(entry.contentRelation);
   const description = promptDescription(entry);
   const canonical = absoluteUrl(`/prompts/${entry.slug}`);
@@ -143,6 +154,13 @@ export default async function PromptPage({ params }: PromptPageProps) {
           userInteractionCount: entry.engagement.likes,
         },
       ],
+      comment: publishedComments.slice(0, 10).map((comment) => ({
+        "@type": "Comment",
+        author: { "@type": "Person", name: comment.authorName },
+        dateCreated: comment.createdAt,
+        text: comment.body,
+      })),
+      commentCount: publishedCommentState.total,
       keywords: entry.tags.map((tag) => tag.name).join("、"),
       name: entry.title,
       publisher: {
@@ -170,6 +188,14 @@ export default async function PromptPage({ params }: PromptPageProps) {
         slug={entry.slug}
       >
         <article className="mt-5 sm:mt-7">
+          {entry.feature ? (
+            <div className="mb-4 flex max-w-3xl items-start gap-3 border-l-2 border-primary pl-3">
+              <span className="shrink-0 font-serif text-sm text-primary">精选</span>
+              <p className="text-sm leading-6 text-muted-foreground">
+                {entry.feature.recommendation}
+              </p>
+            </div>
+          ) : null}
           <h1 className="mb-5 max-w-4xl font-serif text-3xl leading-tight text-foreground sm:mb-7 sm:text-4xl">
             {entry.title}
           </h1>
@@ -245,6 +271,22 @@ export default async function PromptPage({ params }: PromptPageProps) {
                   </div>
                 </div>
               ) : null}
+              {entry.collections.length ? (
+                <div className="mb-3 border-b border-border/70 pb-3">
+                  <p className="text-xs text-muted-foreground">收录专栏</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {entry.collections.map((collection) => (
+                      <Link
+                        className="inline-flex min-h-9 items-center border border-border px-2 text-xs text-foreground transition-colors hover:border-primary/50 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        href={`/collections/${collection.slug}` as Route}
+                        key={collection.id}
+                      >
+                        {collection.title}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <a
                 className="flex min-h-11 items-center underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 href={entry.author.url}
@@ -265,6 +307,14 @@ export default async function PromptPage({ params }: PromptPageProps) {
               </a>
             </aside>
           </div>
+
+          <PromptComments
+            isAuthenticated={ownCommentState.isAuthenticated}
+            ownComments={ownCommentState.comments}
+            publishedComments={publishedComments}
+            publishedTotal={publishedCommentState.total}
+            slug={entry.slug}
+          />
         </article>
       </PromptEngagementProvider>
     </main>

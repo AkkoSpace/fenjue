@@ -178,14 +178,23 @@ export interface UpdateAdminPromptImageInput {
   width: number;
 }
 
+export interface AdminCollectionMembershipInput {
+  collectionId: string;
+  position: number;
+}
+
 export interface UpdateAdminPromptInput {
   authorName: string;
   authorUrl: string;
   categoryKey: string;
+  collectionMemberships: AdminCollectionMembershipInput[];
   contentRelation: ContentRelation;
   id: string;
   images: UpdateAdminPromptImageInput[];
   isNsfw: boolean;
+  featured: boolean;
+  featurePosition: number;
+  featureRecommendation: string;
   prompt: string;
   sourceUrl: string;
   tagKeys: string[];
@@ -228,6 +237,30 @@ function validatePromptEdit(
     return "作者链接和来源链接都需要是有效的 HTTP 地址。";
   }
   if (!isContentRelation(input.contentRelation)) return "内容关系无效。";
+  if (
+    input.featured &&
+    (input.featureRecommendation.length < 2 ||
+      input.featureRecommendation.length > 160 ||
+      !Number.isSafeInteger(input.featurePosition) ||
+      input.featurePosition < 1 ||
+      input.featurePosition > 32767)
+  ) {
+    return "精选作品需要填写 2-160 字推荐语和有效排序。";
+  }
+  if (
+    input.collectionMemberships.length > 20 ||
+    input.collectionMemberships.some(
+      (membership) =>
+        !UUID_PATTERN.test(membership.collectionId) ||
+        !Number.isSafeInteger(membership.position) ||
+        membership.position < 1 ||
+        membership.position > 32767,
+    ) ||
+    new Set(input.collectionMemberships.map((item) => item.collectionId)).size !==
+      input.collectionMemberships.length
+  ) {
+    return "专栏归属或专栏内排序无效。";
+  }
   if (!isTaxonomyKey(input.categoryKey)) return "作品分类无效。";
   if (
     input.tagKeys.length < 1 ||
@@ -296,10 +329,16 @@ export async function updateAdminPrompt(
     authorName: cleanAdminInput(rawInput?.authorName),
     authorUrl: cleanAdminInput(rawInput?.authorUrl),
     categoryKey: cleanAdminInput(rawInput?.categoryKey),
+    collectionMemberships: Array.isArray(rawInput?.collectionMemberships)
+      ? rawInput.collectionMemberships
+      : [],
     contentRelation: rawInput?.contentRelation,
     id: cleanAdminInput(rawInput?.id),
     images: Array.isArray(rawInput?.images) ? rawInput.images : [],
     isNsfw: rawInput?.isNsfw === true,
+    featured: rawInput?.featured === true,
+    featurePosition: Number(rawInput?.featurePosition),
+    featureRecommendation: cleanAdminInput(rawInput?.featureRecommendation),
     prompt: cleanAdminInput(rawInput?.prompt),
     sourceUrl: cleanAdminInput(rawInput?.sourceUrl),
     tagKeys: Array.isArray(rawInput?.tagKeys) ? rawInput.tagKeys : [],
@@ -368,7 +407,27 @@ export async function updateAdminPrompt(
     };
   }
 
+  const editorialResult = await supabase.rpc("admin_set_prompt_editorial", {
+    p_collection_memberships: input.collectionMemberships.map(
+      (membership) => ({
+        collection_id: membership.collectionId,
+        position: membership.position,
+      }),
+    ),
+    p_feature_position: input.featurePosition,
+    p_featured: input.featured,
+    p_prompt_id: input.id,
+    p_recommendation: input.featureRecommendation,
+  });
+  const warnings: string[] = [];
+
+  if (editorialResult.error) {
+    console.warn("Unable to update prompt editorial metadata", editorialResult.error.code);
+    warnings.push("作品内容已保存，但精选或专栏归属未能更新，请重新打开检查。");
+  }
+
   updateTag("prompts");
+  updateTag("editorial");
   const removedKeys = Array.isArray(data)
     ? data.filter((key): key is string => typeof key === "string")
     : [];
@@ -378,13 +437,13 @@ export async function updateAdminPrompt(
       await deleteImageObjects(removedKeys);
     } catch (deleteError) {
       console.warn("Unable to delete removed prompt images from R2", deleteError);
-      return {
-        ok: true,
-        slug: current.slug,
-        warning: "内容已经保存，但有旧图片未能从 R2 清理，请稍后人工检查。",
-      };
+      warnings.push("有旧图片未能从 R2 清理，请稍后人工检查。");
     }
   }
 
-  return { ok: true, slug: current.slug };
+  return {
+    ok: true,
+    slug: current.slug,
+    warning: warnings.length ? warnings.join("") : undefined,
+  };
 }
