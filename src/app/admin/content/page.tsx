@@ -21,11 +21,13 @@ import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  type AdminPromptQuality,
   type AdminPromptSearchParams,
   type AdminPromptStatus,
   getAdminPrompts,
 } from "@/lib/admin/queries";
 import { getAiToolOption } from "@/lib/content/ai-tools";
+import { getContentTaxonomy } from "@/lib/content/queries";
 import { getContentRelationOption } from "@/lib/content/relation";
 import { hasR2WriteConfig } from "@/lib/r2/server";
 import { cn } from "@/lib/utils";
@@ -46,20 +48,35 @@ interface ContentPageProps {
 }
 
 interface ContentHrefOptions {
+  category?: string;
   page?: number;
+  quality?: AdminPromptQuality;
   query?: string;
   status?: AdminPromptStatus;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" });
 
-function contentHref({ page = 1, query = "", status = "all" }: ContentHrefOptions) {
+function contentHref({
+  category = "",
+  page = 1,
+  quality = "all",
+  query = "",
+  status = "all",
+}: ContentHrefOptions) {
   const params = new URLSearchParams();
+  if (category) params.set("category", category);
   if (query) params.set("q", query);
+  if (quality !== "all") params.set("quality", quality);
   if (status !== "all") params.set("status", status);
   if (page > 1) params.set("page", String(page));
   const search = params.toString();
   return `/admin/content${search ? `?${search}` : ""}` as Route;
+}
+
+function reviewHref(id: string, options: ContentHrefOptions) {
+  const listUrl = new URL(contentHref(options), "https://fenjue.local");
+  return `/admin/content/${id}/edit${listUrl.search}` as Route;
 }
 
 function ContentFallback() {
@@ -115,7 +132,10 @@ export default function AdminContentPage(props: ContentPageProps) {
 
 async function Content({ searchParams }: ContentPageProps) {
   const raw = await searchParams;
-  const data = await getAdminPrompts(raw);
+  const [data, taxonomy] = await Promise.all([
+    getAdminPrompts(raw),
+    getContentTaxonomy(),
+  ]);
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
   const message = firstMessage(raw.error)
     ? { kind: "error" as const, text: firstMessage(raw.error)! }
@@ -158,7 +178,7 @@ async function Content({ searchParams }: ContentPageProps) {
 
       <section aria-labelledby="prompt-management-heading" className="mt-8">
         <h2 className="sr-only" id="prompt-management-heading">作品列表</h2>
-        <div className="flex flex-col gap-4 border-y border-border py-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="border-y border-border py-4">
           <nav aria-label="作品状态" className="flex flex-wrap gap-1">
             {statusOptions.map((option) => (
               <Link
@@ -169,7 +189,12 @@ async function Content({ searchParams }: ContentPageProps) {
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
-                href={contentHref({ query: data.query, status: option.value })}
+                href={contentHref({
+                  category: data.category,
+                  quality: data.quality,
+                  query: data.query,
+                  status: option.value,
+                })}
                 key={option.value}
               >
                 {option.label}
@@ -178,33 +203,75 @@ async function Content({ searchParams }: ContentPageProps) {
             ))}
           </nav>
 
-          <form className="flex w-full gap-2 xl:max-w-md" method="get">
+          <form
+            className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-2 xl:grid-cols-[12rem_14rem_minmax(18rem,1fr)_auto] xl:items-end"
+            method="get"
+          >
             {data.status !== "all" ? (
               <input name="status" type="hidden" value={data.status} />
             ) : null}
-            <div className="relative min-w-0 flex-1">
-              <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                aria-label="搜索作品"
-                className="pl-9"
-                defaultValue={data.query}
-                maxLength={80}
-                name="q"
-                placeholder="标题、作者或作品编号"
-                type="search"
-              />
-            </div>
-            <Button className="min-h-11 rounded-sm" type="submit" variant="outline">搜索</Button>
-            {data.query ? (
-              <Link
-                aria-label="清除搜索"
-                className={cn(buttonVariants({ size: "icon", variant: "ghost" }), "size-11 rounded-sm")}
-                href={contentHref({ status: data.status })}
-                title="清除搜索"
+
+            <label className="grid gap-1.5 text-xs text-muted-foreground">
+              资料状态
+              <select
+                className="min-h-11 rounded-sm border border-input bg-transparent px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+                defaultValue={data.quality}
+                name="quality"
               >
-                <RotateCcw aria-hidden="true" />
-              </Link>
-            ) : null}
+                <option value="all">全部资料</option>
+                <option value="ready">导入完整</option>
+                <option value="needs_review">需要人工复核</option>
+                <option value="missing_media">缺少图片</option>
+              </select>
+            </label>
+
+            <label className="grid gap-1.5 text-xs text-muted-foreground">
+              主分类
+              <select
+                className="min-h-11 rounded-sm border border-input bg-transparent px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+                defaultValue={data.category}
+                name="category"
+              >
+                <option value="">全部分类</option>
+                {taxonomy.categories.map((category) => (
+                  <option key={category.key} value={category.key}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid min-w-0 gap-1.5 text-xs text-muted-foreground sm:col-span-2 xl:col-span-1">
+              搜索
+              <span className="relative block min-w-0">
+                <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  aria-label="搜索作品"
+                  className="pl-9"
+                  defaultValue={data.query}
+                  maxLength={80}
+                  name="q"
+                  placeholder="标题、作者或作品编号"
+                  type="search"
+                />
+              </span>
+            </label>
+
+            <div className="flex min-h-11 items-center gap-2 sm:col-span-2 xl:col-span-1">
+              <Button className="min-h-11 flex-1 rounded-sm xl:flex-none" type="submit" variant="outline">
+                搜索与筛选
+              </Button>
+              {data.query || data.category || data.quality !== "all" ? (
+                <Link
+                  aria-label="清除筛选"
+                  className={cn(buttonVariants({ size: "icon", variant: "ghost" }), "size-11 shrink-0 rounded-sm")}
+                  href={contentHref({ status: data.status })}
+                  title="清除筛选"
+                >
+                  <RotateCcw aria-hidden="true" />
+                </Link>
+              ) : null}
+            </div>
           </form>
         </div>
 
@@ -235,6 +302,12 @@ async function Content({ searchParams }: ContentPageProps) {
                     {prompt.verifiedTools.length ? ` · ${prompt.verifiedTools.map((tool) => getAiToolOption(tool).label).join(" / ")}` : ""}
                     {prompt.isNsfw ? " · NSFW" : ""}
                   </p>
+                  {prompt.importStatus === "needs_review" || prompt.importStatus === "missing_media" ? (
+                    <p className="mt-2 text-xs text-destructive">
+                      {prompt.importStatus === "missing_media" ? "缺少图片" : "导入资料需要人工复核"}
+                      {prompt.importNote ? ` · ${prompt.importNote}` : ""}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="col-start-2 xl:col-start-auto">
@@ -245,7 +318,13 @@ async function Content({ searchParams }: ContentPageProps) {
                 <div className="col-span-2 flex flex-wrap items-center gap-2 xl:col-span-1 xl:justify-end">
                   <Link
                     className={cn(buttonVariants({ size: "sm", variant: "outline" }), "min-h-11 rounded-sm sm:min-h-9")}
-                    href={`/admin/content/${prompt.id}/edit` as Route}
+                    href={reviewHref(prompt.id, {
+                      category: data.category,
+                      page: data.status === "all" ? 1 : data.page,
+                      quality: data.quality,
+                      query: data.query,
+                      status: data.status === "all" ? prompt.reviewStatus : data.status,
+                    })}
                   >
                     <PencilLine aria-hidden="true" />
                     {prompt.reviewStatus === "pending" ? "审核" : "查看与编辑"}
@@ -259,7 +338,18 @@ async function Content({ searchParams }: ContentPageProps) {
                       <ExternalLink aria-hidden="true" /><span className="sr-only">查看公开页面</span>
                     </Link>
                   ) : null}
-                  <DeletePromptForm canDelete={canDelete} id={prompt.id} returnTo={contentHref({ page: data.page, query: data.query, status: data.status })} title={prompt.title} />
+                  <DeletePromptForm
+                    canDelete={canDelete}
+                    id={prompt.id}
+                    returnTo={contentHref({
+                      category: data.category,
+                      page: data.page,
+                      quality: data.quality,
+                      query: data.query,
+                      status: data.status,
+                    })}
+                    title={prompt.title}
+                  />
                 </div>
               </article>
             ))}
@@ -268,20 +358,24 @@ async function Content({ searchParams }: ContentPageProps) {
           <div className="border-y border-border py-16 text-center">
             <ImageIcon aria-hidden="true" className="mx-auto size-6 text-muted-foreground" />
             <h3 className="mt-4 font-serif text-xl text-foreground">没有符合条件的作品</h3>
-            <p className="mt-2 text-sm text-muted-foreground">{data.query ? "换一个关键词，或清除当前筛选。" : "上传第一条作品后会出现在这里。"}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {data.query || data.category || data.quality !== "all"
+                ? "调整关键词或清除当前筛选。"
+                : "上传第一条作品后会出现在这里。"}
+            </p>
           </div>
         )}
 
         {totalPages > 1 ? (
           <nav aria-label="作品分页" className="mt-6 flex items-center justify-between border-t border-border pt-5">
             {data.page > 1 ? (
-              <Link className={cn(buttonVariants({ variant: "outline" }), "min-h-11 rounded-sm")} href={contentHref({ page: data.page - 1, query: data.query, status: data.status })}>
+              <Link className={cn(buttonVariants({ variant: "outline" }), "min-h-11 rounded-sm")} href={contentHref({ category: data.category, page: data.page - 1, quality: data.quality, query: data.query, status: data.status })}>
                 <ArrowLeft aria-hidden="true" />上一页
               </Link>
             ) : <span />}
             <span className="text-sm tabular-nums text-muted-foreground">{data.page} / {totalPages}</span>
             {data.page < totalPages ? (
-              <Link className={cn(buttonVariants({ variant: "outline" }), "min-h-11 rounded-sm")} href={contentHref({ page: data.page + 1, query: data.query, status: data.status })}>
+              <Link className={cn(buttonVariants({ variant: "outline" }), "min-h-11 rounded-sm")} href={contentHref({ category: data.category, page: data.page + 1, quality: data.quality, query: data.query, status: data.status })}>
                 下一页<ArrowRight aria-hidden="true" />
               </Link>
             ) : <span />}

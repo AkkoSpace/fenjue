@@ -45,6 +45,7 @@ function invalidIdUrl(returnTo: string) {
 export async function reviewPrompt(formData: FormData) {
   const id = cleanAdminInput(formData.get("id"));
   const returnTo = cleanAdminInput(formData.get("returnTo"));
+  const nextReturnTo = cleanAdminInput(formData.get("nextReturnTo"));
   const decision = cleanAdminInput(formData.get("decision"));
   const note = cleanAdminInput(formData.get("note"));
 
@@ -91,9 +92,12 @@ export async function reviewPrompt(formData: FormData) {
   }
 
   updateTag("prompts");
+  const destination = decision !== "pending" && nextReturnTo
+    ? nextReturnTo
+    : returnTo;
   redirect(
     adminMessageUrl(
-      returnTo,
+      destination,
       "success",
       decision === "approved"
         ? "作品已通过审核并公开展示。"

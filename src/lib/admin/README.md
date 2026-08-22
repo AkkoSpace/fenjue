@@ -8,7 +8,7 @@
 
 ## 核心职责
 
-- `queries.ts`：查询总览、作品列表与详情、用户和分类词表。
+- `queries.ts`：查询总览、可组合筛选的作品列表、单条详情与相邻审核项，以及用户和分类词表。
 - `actions.ts`：执行单条作品编辑、审核决策和永久删除。
 - `user-actions.ts`：调整普通用户与普通管理员角色，仅允许唯一超级管理员调用。
 - `taxonomy-actions.ts`：创建、编辑和停用受控分类与标签。
@@ -32,6 +32,6 @@
 const data = await getAdminPrompts(searchParams);
 ```
 
-单条作品编辑通过事务 RPC 更新多张表；变更操作只作为 Next.js Server Action 绑定到后台表单，不应从客户端封装管理凭据。
+单条作品编辑通过事务 RPC 更新多张表；审核动作会在成功后按当前筛选队列跳到下一条，并从 `prompt_reviews` 读取可审计历史。变更操作只作为 Next.js Server Action 绑定到后台表单，不应从客户端封装管理凭据。
 
 完整的产品边界和配置说明见 `docs/ADMIN.md`。
