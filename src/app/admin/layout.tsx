@@ -33,7 +33,7 @@ async function AdminShell({ children }: Readonly<{ children: React.ReactNode }>)
 
   return (
     <div className="mx-auto grid w-full max-w-[96rem] flex-1 gap-6 px-5 pb-20 pt-6 sm:px-8 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-10 lg:pt-10">
-      <aside>
+      <aside className="min-w-0">
         <div className="mb-4 hidden border-b border-border pb-4 lg:block">
           <p className="font-serif text-lg text-foreground">焚诀司录</p>
           <p className="mt-1 text-xs text-muted-foreground">内容与权限中枢</p>
