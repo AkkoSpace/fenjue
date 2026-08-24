@@ -1,7 +1,11 @@
 import "server-only";
 
 import { requireAdmin } from "@/lib/auth/authorization";
-import { isAiToolKey, type AiToolKey } from "@/lib/content/ai-tools";
+import {
+  aiToolFromRelation,
+  type AiTool,
+  type AiToolRow,
+} from "@/lib/content/ai-tools";
 import type { PromptReviewStatus } from "@/lib/content/review";
 
 const PAGE_SIZE = 20;
@@ -17,7 +21,7 @@ export interface AdminPromptComment {
   promptTitle: string;
   reviewNote: string | null;
   reviewStatus: PromptReviewStatus;
-  toolKey: AiToolKey | null;
+  tool: AiTool | null;
 }
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -45,7 +49,7 @@ export async function getAdminPromptComments(raw: {
   let query = supabase
     .from("prompt_comments")
     .select(
-      "id,author_name,body,tool_key,review_status,review_note,created_at,prompt:prompts!inner(slug,title)",
+      "id,author_name,body,tool:ai_tools!prompt_comments_tool_key_fkey(key,name,description,logo_url,website_url,active,sort_order),review_status,review_note,created_at,prompt:prompts!inner(slug,title)",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
@@ -68,7 +72,7 @@ export async function getAdminPromptComments(raw: {
       prompt: { slug: string; title: string } | { slug: string; title: string }[];
       review_note: string | null;
       review_status: PromptReviewStatus;
-      tool_key: string | null;
+      tool: AiToolRow | AiToolRow[] | null;
     };
     const prompt = Array.isArray(row.prompt) ? row.prompt[0] : row.prompt;
     return prompt
@@ -81,7 +85,7 @@ export async function getAdminPromptComments(raw: {
           promptTitle: prompt.title,
           reviewNote: row.review_note,
           reviewStatus: row.review_status,
-          toolKey: isAiToolKey(row.tool_key) ? row.tool_key : null,
+          tool: aiToolFromRelation(row.tool),
         } satisfies AdminPromptComment]
       : [];
   });

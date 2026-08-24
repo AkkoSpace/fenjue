@@ -4,6 +4,7 @@ import { updateTag } from "next/cache";
 
 import {
   isAiToolKey,
+  MAX_VERIFIED_AI_TOOLS,
   normalizeAiToolKeys,
   type AiToolKey,
 } from "@/lib/content/ai-tools";
@@ -106,7 +107,7 @@ function invalidInput(input: PublishPromptInput, userId: string) {
 
   if (
     !Array.isArray(input.verifiedTools) ||
-    input.verifiedTools.length > 4 ||
+    input.verifiedTools.length > MAX_VERIFIED_AI_TOOLS ||
     input.verifiedTools.some((tool) => !isAiToolKey(tool)) ||
     new Set(input.verifiedTools).size !== input.verifiedTools.length
   ) {

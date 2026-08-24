@@ -2,8 +2,10 @@ import "server-only";
 
 import { requireAdmin } from "@/lib/auth/authorization";
 import {
-  normalizeAiToolKeys,
-  type AiToolKey,
+  aiToolFromRelation,
+  sortAiTools,
+  type AiTool,
+  type AiToolRow,
 } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
 import type { PromptReviewStatus } from "@/lib/content/review";
@@ -63,7 +65,9 @@ interface PromptAdminRow {
     recommendation: string;
   }[] | null;
   prompt_images: PromptImageRow[];
-  prompt_ai_tools: { tool_key: AiToolKey }[];
+  prompt_ai_tools: {
+    tool: AiToolRow | AiToolRow[] | null;
+  }[];
   prompt_tags: {
     tag: {
       key: string;
@@ -110,7 +114,7 @@ export interface AdminPromptListItem {
   sourceUrl: string;
   tags: TaxonomyTag[];
   title: string;
-  verifiedTools: AiToolKey[];
+  verifiedTools: AiTool[];
 }
 
 export interface AdminPromptDetail {
@@ -151,7 +155,7 @@ export interface AdminPromptDetail {
   tags: TaxonomyTag[];
   title: string;
   userId: string | null;
-  verifiedTools: AiToolKey[];
+  verifiedTools: AiTool[];
 }
 
 export interface AdminUserListItem {
@@ -248,7 +252,7 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
   let listQuery = supabase
     .from("prompts")
     .select(
-      "id,slug,title,author_name,source_url,is_nsfw,content_relation,import_status,import_note,published,published_at,review_status,review_note,reviewed_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
+      "id,slug,title,author_name,source_url,is_nsfw,content_relation,import_status,import_note,published,published_at,review_status,review_note,reviewed_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool:ai_tools!prompt_ai_tools_tool_key_fkey(key,name,description,logo_url,website_url,active,sort_order)),prompt_tags(tag:tags(key,name,kind,sort_order))",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
@@ -379,8 +383,11 @@ export async function getAdminPrompts(raw: AdminPromptSearchParams) {
         })
         .sort((left, right) => left.sortOrder - right.sortOrder),
       title: row.title,
-      verifiedTools: normalizeAiToolKeys(
-        row.prompt_ai_tools.map((tool) => tool.tool_key),
+      verifiedTools: sortAiTools(
+        row.prompt_ai_tools.flatMap(({ tool }) => {
+          const value = aiToolFromRelation(tool);
+          return value ? [value] : [];
+        }),
       ),
     };
   });
@@ -411,7 +418,7 @@ export async function getAdminPrompt(id: string) {
     supabase
       .from("prompts")
       .select(
-        "id,user_id,slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published,published_at,review_status,review_note,reviewed_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),feature:prompt_features(recommendation,position),collection_prompts(collection_id,position),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))",
+        "id,user_id,slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published,published_at,review_status,review_note,reviewed_at,created_at,category:categories!prompts_category_key_fkey(key,name,sort_order),feature:prompt_features(recommendation,position),collection_prompts(collection_id,position),prompt_images(id,position,object_key,alt,width,height),prompt_ai_tools(tool:ai_tools!prompt_ai_tools_tool_key_fkey(key,name,description,logo_url,website_url,active,sort_order)),prompt_tags(tag:tags(key,name,kind,sort_order))",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -536,8 +543,11 @@ export async function getAdminPrompt(id: string) {
       .sort((left, right) => left.sortOrder - right.sortOrder),
     title: row.title,
     userId: row.user_id,
-    verifiedTools: normalizeAiToolKeys(
-      row.prompt_ai_tools.map((tool) => tool.tool_key),
+    verifiedTools: sortAiTools(
+      row.prompt_ai_tools.flatMap(({ tool }) => {
+        const value = aiToolFromRelation(tool);
+        return value ? [value] : [];
+      }),
     ),
   } satisfies AdminPromptDetail;
 }

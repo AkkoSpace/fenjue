@@ -2,6 +2,7 @@
 
 import {
   BookOpenText,
+  Bot,
   FolderTree,
   Gauge,
   Images,
@@ -20,6 +21,7 @@ const ITEMS = [
   { href: "/admin/comments", icon: MessageSquareText, label: "评价审核", mobileLabel: "评价" },
   { href: "/admin/users", icon: Users, label: "用户管理", mobileLabel: "用户" },
   { href: "/admin/taxonomy", icon: FolderTree, label: "分类管理", mobileLabel: "分类" },
+  { href: "/admin/models", icon: Bot, label: "模型管理", mobileLabel: "模型" },
 ] as const;
 
 export function AdminNav() {

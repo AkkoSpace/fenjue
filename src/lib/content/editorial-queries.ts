@@ -3,7 +3,10 @@ import "server-only";
 import { createClient as createPublicClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 
-import { isAiToolKey } from "@/lib/content/ai-tools";
+import {
+  aiToolFromRelation,
+  type AiToolRow,
+} from "@/lib/content/ai-tools";
 import type {
   FeaturedPrompt,
   PromptCollectionDetail,
@@ -52,7 +55,7 @@ interface CommentRow {
   id: string;
   review_note: string | null;
   review_status: PromptReviewStatus;
-  tool_key: string | null;
+  tool: AiToolRow | AiToolRow[] | null;
 }
 
 const CARD_SELECT =
@@ -133,7 +136,7 @@ function commentFromRow(row: CommentRow, isOwn: boolean): PromptComment {
     isOwn,
     reviewNote: row.review_note,
     reviewStatus: row.review_status,
-    toolKey: isAiToolKey(row.tool_key) ? row.tool_key : null,
+    tool: aiToolFromRelation(row.tool),
   };
 }
 
@@ -244,12 +247,13 @@ export async function getPublishedPromptComments(
 ): Promise<{ comments: PromptComment[]; total: number }> {
   "use cache";
   cacheLife("minutes");
+  cacheTag("ai-tools");
   cacheTag(`comments:${slug}`);
 
   const { count, data, error } = await anonymousClient()
     .from("prompt_comments")
     .select(
-      "id,author_name,body,tool_key,review_status,review_note,created_at,prompt:prompts!inner(slug)",
+      "id,author_name,body,tool:ai_tools!prompt_comments_tool_key_fkey(key,name,description,logo_url,website_url,active,sort_order),review_status,review_note,created_at,prompt:prompts!inner(slug)",
       { count: "exact" },
     )
     .eq("prompt.slug", slug)
@@ -283,7 +287,7 @@ export async function getOwnPromptComments(
   const { data, error } = await supabase
     .from("prompt_comments")
     .select(
-      "id,author_name,body,tool_key,review_status,review_note,created_at,prompt:prompts!inner(slug)",
+      "id,author_name,body,tool:ai_tools!prompt_comments_tool_key_fkey(key,name,description,logo_url,website_url,active,sort_order),review_status,review_note,created_at,prompt:prompts!inner(slug)",
     )
     .eq("user_id", user.id)
     .eq("prompt.slug", slug)

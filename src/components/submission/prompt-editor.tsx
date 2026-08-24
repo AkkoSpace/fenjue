@@ -23,7 +23,7 @@ import {
   publishPrompt,
   type PublishPromptImageInput,
 } from "@/lib/content/actions";
-import type { AiToolKey } from "@/lib/content/ai-tools";
+import type { AiTool, AiToolKey } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
 import type {
   TaxonomyCategory,
@@ -36,6 +36,7 @@ import {
 } from "@/lib/uploads/constraints";
 
 interface PromptEditorProps {
+  aiTools: AiTool[];
   categories: TaxonomyCategory[];
   defaultAuthorName: string;
   tags: TaxonomyTag[];
@@ -87,6 +88,7 @@ function labelClassName() {
 }
 
 export function PromptEditor({
+  aiTools,
   categories,
   defaultAuthorName,
   tags,
@@ -414,6 +416,7 @@ export function PromptEditor({
               <VerifiedToolsSelector
                 disabled={isPublishing}
                 onChange={setVerifiedTools}
+                tools={aiTools}
                 value={verifiedTools}
               />
             </div>

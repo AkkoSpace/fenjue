@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
+import { AiToolMark } from "@/components/ai-tool-mark";
 import { PromptCopyButton } from "@/components/prompt-copy-button";
 import { PromptComments } from "@/components/prompt-comments";
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/components/prompt-engagement";
 import { PromptGallery } from "@/components/prompt-gallery";
 import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
-import { getAiToolOption } from "@/lib/content/ai-tools";
+import { getActiveAiTools } from "@/lib/content/ai-tool-queries";
 import { getContentRelationOption } from "@/lib/content/relation";
 import { getPromptBySlug } from "@/lib/content/queries";
 import {
@@ -30,7 +31,7 @@ interface PromptPageProps {
 
 function promptDescription(entry: PromptEntryData) {
   const tools = entry.verifiedTools
-    .map((tool) => getAiToolOption(tool).label)
+    .map((tool) => tool.name)
     .join("、");
   const raw = `在焚诀查看“${entry.title}”的完整 AI 文生图提示词、参考图片、${entry.category.name}分类与相关标签${tools ? `，已在${tools}验证` : ""}。`;
   const characters = [...raw];
@@ -100,9 +101,10 @@ export default async function PromptPage({ params }: PromptPageProps) {
     notFound();
   }
 
-  const [publishedCommentState, ownCommentState] = await Promise.all([
+  const [publishedCommentState, ownCommentState, activeAiTools] = await Promise.all([
     getPublishedPromptComments(entry.slug),
     getOwnPromptComments(entry.slug),
+    getActiveAiTools(),
   ]);
   const publishedComments = publishedCommentState.comments;
 
@@ -262,10 +264,11 @@ export default async function PromptPage({ params }: PromptPageProps) {
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {entry.verifiedTools.map((tool) => (
                       <span
-                        className="border border-primary/25 bg-primary/5 px-2 py-1 text-xs font-medium text-foreground"
-                        key={tool}
+                        className="inline-flex min-h-9 items-center gap-2 border border-primary/25 bg-primary/5 px-2 text-xs font-medium text-foreground"
+                        key={tool.key}
                       >
-                        {getAiToolOption(tool).label}
+                        <AiToolMark className="size-5 border-0 bg-transparent" tool={tool} />
+                        {tool.name}
                       </span>
                     ))}
                   </div>
@@ -309,6 +312,7 @@ export default async function PromptPage({ params }: PromptPageProps) {
           </div>
 
           <PromptComments
+            aiTools={activeAiTools}
             isAuthenticated={ownCommentState.isAuthenticated}
             ownComments={ownCommentState.comments}
             publishedComments={publishedComments}

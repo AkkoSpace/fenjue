@@ -26,7 +26,6 @@ import {
   type AdminPromptStatus,
   getAdminPrompts,
 } from "@/lib/admin/queries";
-import { getAiToolOption } from "@/lib/content/ai-tools";
 import { getContentTaxonomy } from "@/lib/content/queries";
 import { getContentRelationOption } from "@/lib/content/relation";
 import { hasR2WriteConfig } from "@/lib/r2/server";
@@ -299,7 +298,7 @@ async function Content({ searchParams }: ContentPageProps) {
                   <p className="mt-1 truncate text-xs text-muted-foreground/80">
                     {prompt.slug} · {getContentRelationOption(prompt.contentRelation).label} · {prompt.category.name}
                     {prompt.tags.length ? ` · ${prompt.tags.map((tag) => `#${tag.name}`).join(" ")}` : ""}
-                    {prompt.verifiedTools.length ? ` · ${prompt.verifiedTools.map((tool) => getAiToolOption(tool).label).join(" / ")}` : ""}
+                    {prompt.verifiedTools.length ? ` · ${prompt.verifiedTools.map((tool) => tool.name).join(" / ")}` : ""}
                     {prompt.isNsfw ? " · NSFW" : ""}
                   </p>
                   {prompt.importStatus === "needs_review" || prompt.importStatus === "missing_media" ? (

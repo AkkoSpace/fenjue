@@ -1,4 +1,4 @@
-import type { AiToolKey } from "@/lib/content/ai-tools";
+import type { AiTool } from "@/lib/content/ai-tools";
 import type { PromptReviewStatus } from "@/lib/content/review";
 import type { PromptCardData, PromptImage } from "@/lib/content/types";
 
@@ -43,7 +43,7 @@ export interface PromptComment {
   isOwn: boolean;
   reviewNote: string | null;
   reviewStatus: PromptReviewStatus;
-  toolKey: AiToolKey | null;
+  tool: AiTool | null;
 }
 
 export const MAX_COMMENT_LENGTH = 500;

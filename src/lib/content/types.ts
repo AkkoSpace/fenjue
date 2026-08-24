@@ -1,4 +1,4 @@
-import type { AiToolKey } from "@/lib/content/ai-tools";
+import type { AiTool } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
 import type { PromptEngagementMetrics } from "@/lib/content/engagement";
 import type {
@@ -38,7 +38,7 @@ export interface PromptEntryData {
   sourceUrl: string;
   tags: TaxonomyTag[];
   title: string;
-  verifiedTools: AiToolKey[];
+  verifiedTools: AiTool[];
 }
 
 export type PromptCardData = Pick<

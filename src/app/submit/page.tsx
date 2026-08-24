@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { PromptEditor } from "@/components/submission/prompt-editor";
+import { getActiveAiTools } from "@/lib/content/ai-tool-queries";
 import { getContentTaxonomy } from "@/lib/content/queries";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -41,13 +42,14 @@ async function SubmitContent() {
     redirect("/login?next=/submit");
   }
 
-  const [{ data: profile }, taxonomy] = await Promise.all([
+  const [{ data: profile }, taxonomy, aiTools] = await Promise.all([
     supabase
       .from("profiles")
       .select("display_name")
       .eq("id", user.id)
       .maybeSingle(),
     getContentTaxonomy(),
+    getActiveAiTools(),
   ]);
 
   return (
@@ -65,6 +67,7 @@ async function SubmitContent() {
       </div>
 
       <PromptEditor
+        aiTools={aiTools}
         categories={taxonomy.categories}
         defaultAuthorName={
           profile?.display_name || user.user_metadata?.display_name || ""

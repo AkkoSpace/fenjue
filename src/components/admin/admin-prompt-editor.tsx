@@ -29,7 +29,7 @@ import {
 } from "@/lib/admin/actions";
 import type { AdminCollection } from "@/lib/admin/editorial-queries";
 import type { AdminPromptDetail } from "@/lib/admin/queries";
-import type { AiToolKey } from "@/lib/content/ai-tools";
+import type { AiTool, AiToolKey } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
 import type { TaxonomyCategory, TaxonomyTag } from "@/lib/content/taxonomy";
 import {
@@ -39,6 +39,7 @@ import {
 } from "@/lib/uploads/constraints";
 
 interface AdminPromptEditorProps {
+  aiTools: AiTool[];
   categories: TaxonomyCategory[];
   collections: AdminCollection[];
   initial: AdminPromptDetail;
@@ -96,6 +97,7 @@ function initialImages(prompt: AdminPromptDetail): EditorImage[] {
 }
 
 export function AdminPromptEditor({
+  aiTools,
   categories,
   collections,
   initial,
@@ -113,7 +115,7 @@ export function AdminPromptEditor({
     useState<ContentRelation>(initial.contentRelation);
   const [tagKeys, setTagKeys] = useState(initial.tags.map((tag) => tag.key));
   const [verifiedTools, setVerifiedTools] =
-    useState<AiToolKey[]>(initial.verifiedTools);
+    useState<AiToolKey[]>(initial.verifiedTools.map((tool) => tool.key));
   const [featured, setFeatured] = useState(initial.featured);
   const [featureRecommendation, setFeatureRecommendation] = useState(
     initial.featureRecommendation,
@@ -374,7 +376,7 @@ export function AdminPromptEditor({
                 <Input id="admin-source-url" onChange={(event) => setSourceUrl(event.target.value)} required type="url" value={sourceUrl} />
               </div>
               <ContentRelationSelector disabled={isSaving} onChange={setContentRelation} value={contentRelation} />
-              <VerifiedToolsSelector disabled={isSaving} onChange={setVerifiedTools} value={verifiedTools} />
+              <VerifiedToolsSelector disabled={isSaving} onChange={setVerifiedTools} tools={aiTools} value={verifiedTools} />
               <EditorialSelector
                 collections={collections}
                 disabled={isSaving}

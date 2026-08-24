@@ -14,7 +14,6 @@ import {
   type AdminCommentStatus,
   getAdminPromptComments,
 } from "@/lib/admin/comment-queries";
-import { getAiToolOption } from "@/lib/content/ai-tools";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -104,9 +103,9 @@ async function CommentsContent({ searchParams }: PageProps) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium text-foreground">{comment.authorName}</span>
                   <PromptReviewBadge status={comment.reviewStatus} />
-                  {comment.toolKey ? (
+                  {comment.tool ? (
                     <span className="border border-border px-2 py-1 text-xs text-muted-foreground">
-                      {getAiToolOption(comment.toolKey).label}
+                      {comment.tool.name}
                     </span>
                   ) : null}
                 </div>

@@ -15,10 +15,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  AI_TOOL_OPTIONS,
-  getAiToolOption,
-} from "@/lib/content/ai-tools";
+import type { AiTool } from "@/lib/content/ai-tools";
 import {
   deleteOwnPromptComment,
   INITIAL_COMMENT_ACTION_STATE,
@@ -47,12 +44,14 @@ function mergeComments(published: PromptComment[], own: PromptComment[]) {
 }
 
 export function PromptComments({
+  aiTools,
   isAuthenticated,
   ownComments,
   publishedComments,
   publishedTotal,
   slug,
 }: {
+  aiTools: AiTool[];
   isAuthenticated: boolean;
   ownComments: PromptComment[];
   publishedComments: PromptComment[];
@@ -143,9 +142,9 @@ export function PromptComments({
                 name="toolKey"
               >
                 <option value="">未说明</option>
-                {AI_TOOL_OPTIONS.map((tool) => (
-                  <option key={tool.value} value={tool.value}>
-                    {tool.label}
+                {aiTools.map((tool) => (
+                  <option key={tool.key} value={tool.key}>
+                    {tool.name}
                   </option>
                 ))}
               </select>
@@ -202,9 +201,9 @@ export function PromptComments({
                     <time className="text-xs text-muted-foreground" dateTime={comment.createdAt}>
                       {dateFormatter.format(new Date(comment.createdAt))}
                     </time>
-                    {comment.toolKey ? (
+                    {comment.tool ? (
                       <span className="border border-border px-2 py-1 text-xs text-muted-foreground">
-                        {getAiToolOption(comment.toolKey).label}
+                        {comment.tool.name}
                       </span>
                     ) : null}
                     {comment.reviewStatus !== "approved" ? (

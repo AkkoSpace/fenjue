@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/authorization";
 import {
   isAiToolKey,
+  MAX_VERIFIED_AI_TOOLS,
   normalizeAiToolKeys,
   type AiToolKey,
 } from "@/lib/content/ai-tools";
@@ -271,7 +272,7 @@ function validatePromptEdit(
     return `请选择 1-${MAX_PROMPT_TAGS} 个有效标签。`;
   }
   if (
-    input.verifiedTools.length > 4 ||
+    input.verifiedTools.length > MAX_VERIFIED_AI_TOOLS ||
     input.verifiedTools.some((tool) => !isAiToolKey(tool)) ||
     new Set(input.verifiedTools).size !== input.verifiedTools.length
   ) {

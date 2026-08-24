@@ -4,8 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 
 import {
-  normalizeAiToolKeys,
-  type AiToolKey,
+  aiToolFromRelation,
+  sortAiTools,
+  type AiToolRow,
 } from "@/lib/content/ai-tools";
 import {
   EMPTY_PROMPT_ENGAGEMENT,
@@ -48,7 +49,9 @@ interface PromptRow {
   is_nsfw: boolean;
   prompt: string;
   prompt_images: PromptImageRow[];
-  prompt_ai_tools: { tool_key: AiToolKey }[];
+  prompt_ai_tools: {
+    tool: AiToolRow | AiToolRow[] | null;
+  }[];
   prompt_tags: {
     tag: TagRow | TagRow[];
   }[];
@@ -285,8 +288,11 @@ function promptFromRow(row: PromptRow, r2BaseUrl: string): PromptEntryData {
       .map(({ tag }) => tagFromRelation(tag))
       .sort((left, right) => left.sortOrder - right.sortOrder),
     title: row.title,
-    verifiedTools: normalizeAiToolKeys(
-      row.prompt_ai_tools.map((tool) => tool.tool_key),
+    verifiedTools: sortAiTools(
+      row.prompt_ai_tools.flatMap(({ tool }) => {
+        const value = aiToolFromRelation(tool);
+        return value ? [value] : [];
+      }),
     ),
   };
 }
@@ -306,7 +312,7 @@ function promptCardFromRow(
 }
 
 const PROMPT_SELECT =
-  "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published_at,category:categories!prompts_category_key_fkey(key,name,sort_order),feature:prompt_features(recommendation,position),collection_prompts(position,collection:collections(id,slug,title,published)),engagement:prompt_engagement_totals(view_count,copy_count,like_count,reaction_tian_count,reaction_di_count,reaction_xuan_count,reaction_huang_count),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool_key),prompt_tags(tag:tags(key,name,kind,sort_order))";
+  "slug,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,published_at,category:categories!prompts_category_key_fkey(key,name,sort_order),feature:prompt_features(recommendation,position),collection_prompts(position,collection:collections(id,slug,title,published)),engagement:prompt_engagement_totals(view_count,copy_count,like_count,reaction_tian_count,reaction_di_count,reaction_xuan_count,reaction_huang_count),prompt_images(position,object_key,alt,width,height),prompt_ai_tools(tool:ai_tools!prompt_ai_tools_tool_key_fkey(key,name,description,logo_url,website_url,active,sort_order)),prompt_tags(tag:tags(key,name,kind,sort_order))";
 const PROMPT_CARD_SELECT =
   "slug,title,is_nsfw,prompt_images(position,object_key,alt,width,height)";
 
