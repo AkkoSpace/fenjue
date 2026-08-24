@@ -14,7 +14,6 @@ import { Suspense } from "react";
 
 import { ActionButton } from "@/components/admin/action-button";
 import { AdminNotice, firstMessage } from "@/components/admin/admin-notice";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminPromptEditor } from "@/components/admin/admin-prompt-editor";
 import { PromptReviewBadge } from "@/components/prompt-review-badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -111,165 +110,188 @@ async function EditPromptContent({ params, searchParams }: EditPromptPageProps) 
 
   return (
     <main>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <Link
-          className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-primary"
-          href={contentListHref(navigation)}
-        >
-          <ArrowLeft aria-hidden="true" className="size-4" />
-          返回筛选结果
-        </Link>
-        <nav aria-label="审核队列导航" className="flex items-center gap-2">
-          {navigation.previous ? (
+      <header className="border-b border-border pb-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
+            href={contentListHref(navigation)}
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            返回审核队列
+          </Link>
+          <nav aria-label="审核队列导航" className="flex items-center gap-1 border border-border bg-background">
+            {navigation.previous ? (
+              <Link
+                aria-label={`上一条：${navigation.previous.title}`}
+                className={cn(buttonVariants({ size: "sm", variant: "ghost" }), "min-h-11 rounded-none border-r border-border px-3")}
+                href={promptReviewHref(navigation.previous.id, navigation)}
+                title={`上一条：${navigation.previous.title}`}
+              >
+                <ArrowLeft aria-hidden="true" />
+                <span className="hidden sm:inline">上一条</span>
+              </Link>
+            ) : null}
+            {navigation.next ? (
+              <Link
+                aria-label={`下一条：${navigation.next.title}`}
+                className={cn(buttonVariants({ size: "sm", variant: "ghost" }), "min-h-11 rounded-none px-3")}
+                href={promptReviewHref(navigation.next.id, navigation)}
+                title={`下一条：${navigation.next.title}`}
+              >
+                <span className="hidden sm:inline">下一条</span>
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            ) : null}
+          </nav>
+        </div>
+
+        <div className="mt-5 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+          <div className="min-w-0 max-w-4xl">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-xs font-medium tracking-[0.18em] text-primary uppercase">
+                Review Desk · 审阅台
+              </p>
+              <PromptReviewBadge status={prompt.reviewStatus} />
+            </div>
+            <h1 className="mt-2 text-balance font-serif text-2xl leading-tight text-foreground sm:text-3xl">
+              {prompt.title}
+            </h1>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground sm:text-sm">
+              {prompt.slug} · {prompt.images.length} 张图片 · {prompt.authorName}
+            </p>
+          </div>
+          {prompt.reviewStatus === "approved" && prompt.published ? (
             <Link
-              className={cn(buttonVariants({ size: "sm", variant: "outline" }), "min-h-11 rounded-sm")}
-              href={promptReviewHref(navigation.previous.id, navigation)}
-              title={`上一条：${navigation.previous.title}`}
+              className={cn(buttonVariants({ variant: "outline" }), "min-h-11 shrink-0 rounded-sm")}
+              href={`/prompts/${prompt.slug}` as Route}
+              target="_blank"
             >
-              <ArrowLeft aria-hidden="true" />
-              上一条
+              <ExternalLink aria-hidden="true" />
+              查看公开页面
             </Link>
           ) : null}
-          {navigation.next ? (
-            <Link
-              className={cn(buttonVariants({ size: "sm", variant: "outline" }), "min-h-11 rounded-sm")}
-              href={promptReviewHref(navigation.next.id, navigation)}
-              title={`下一条：${navigation.next.title}`}
-            >
-              下一条
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          ) : null}
-        </nav>
-      </div>
-      <AdminPageHeader
-        action={prompt.reviewStatus === "approved" && prompt.published ? (
-          <Link className={cn(buttonVariants({ variant: "outline" }), "min-h-11 rounded-sm")} href={`/prompts/${prompt.slug}` as Route} target="_blank"><ExternalLink aria-hidden="true" />查看公开页面</Link>
-        ) : undefined}
-        description={`正在处理 ${prompt.slug}。先保存内容修改，再单独给出审核结论。`}
-        eyebrow="Content Review · 单条审核"
-        title={prompt.title}
-      />
+        </div>
+      </header>
       {message ? <AdminNotice kind={message.kind} text={message.text} /> : null}
 
       <section
-        aria-labelledby="review-heading"
-        className="mt-8 border-y border-border py-5"
+        aria-label="审核结论"
+        className="mt-5 border border-border bg-background shadow-[0_12px_32px_-28px_oklch(0.22_0.02_55/0.55)] xl:sticky xl:top-3 xl:z-20"
       >
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.72fr)_minmax(18rem,0.38fr)] lg:gap-12">
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="font-serif text-2xl" id="review-heading">
-                审核结论
-              </h2>
+        <form
+          action={reviewPrompt}
+          className="grid gap-3 p-3 lg:p-4 xl:grid-cols-[minmax(13rem,0.65fr)_minmax(16rem,1fr)_auto] xl:items-end"
+        >
+          <input name="id" type="hidden" value={prompt.id} />
+          <input name="returnTo" type="hidden" value={returnTo} />
+          {nextReturnTo ? (
+            <input name="nextReturnTo" type="hidden" value={nextReturnTo} />
+          ) : null}
+          <div className="min-w-0 self-center">
+            <div className="flex items-center gap-2">
+              <span className="font-serif text-lg text-foreground">审核结论</span>
               <PromptReviewBadge status={prompt.reviewStatus} />
             </div>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+            <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
               {PROMPT_REVIEW_STATUS_META[prompt.reviewStatus].description}
               {prompt.reviewedAt
-                ? ` 最近一次审核于 ${reviewDateFormatter.format(new Date(prompt.reviewedAt))}。`
-                : " 当前还没有审核记录。"}
+                ? ` ${reviewDateFormatter.format(new Date(prompt.reviewedAt))}`
+                : " 尚无审核记录。"}
             </p>
             {prompt.reviewNote ? (
-              <div className="mt-4 border-l-2 border-destructive/50 bg-destructive/5 px-3 py-2.5 text-sm leading-6 text-foreground">
-                <span className="font-medium">当前驳回原因：</span>
+              <p className="mt-1 truncate text-xs text-destructive" title={prompt.reviewNote}>
+                上次备注：
                 {prompt.reviewNote}
-              </div>
+              </p>
             ) : null}
           </div>
-
-          <form action={reviewPrompt} className="space-y-3">
-            <input name="id" type="hidden" value={prompt.id} />
-            <input name="returnTo" type="hidden" value={returnTo} />
-            {nextReturnTo ? (
-              <input name="nextReturnTo" type="hidden" value={nextReturnTo} />
-            ) : null}
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="review-note">
-                审核备注
-              </label>
-              <Textarea
-                defaultValue={prompt.reviewNote ?? ""}
-                id="review-note"
-                maxLength={2000}
-                name="note"
-                placeholder="驳回时必须说明原因；通过时可留空"
-                rows={4}
-              />
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <ActionButton
-                className="min-h-11 rounded-sm"
-                disabled={prompt.reviewStatus === "approved"}
-                name="decision"
-                pendingLabel="处理中"
-                type="submit"
-                value="approved"
-              >
-                <CheckCircle2 aria-hidden="true" />
-                {nextReturnTo ? "通过并下一条" : "通过并公开"}
-              </ActionButton>
-              <ActionButton
-                className="min-h-11 rounded-sm"
-                name="decision"
-                pendingLabel="处理中"
-                type="submit"
-                value="rejected"
-                variant="outline"
-              >
-                <XCircle aria-hidden="true" />
-                {nextReturnTo ? "驳回并下一条" : "驳回"}
-              </ActionButton>
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground" htmlFor="review-note">
+              审核备注
+            </label>
+            <Textarea
+              className="min-h-11 resize-none py-2.5"
+              defaultValue={prompt.reviewNote ?? ""}
+              id="review-note"
+              maxLength={2000}
+              name="note"
+              placeholder="驳回时说明原因；通过可留空"
+              rows={1}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2 xl:flex-nowrap">
+            <ActionButton
+              className="min-h-11 flex-1 rounded-sm whitespace-nowrap xl:flex-none"
+              disabled={prompt.reviewStatus === "approved"}
+              name="decision"
+              pendingLabel="处理中"
+              type="submit"
+              value="approved"
+            >
+              <CheckCircle2 aria-hidden="true" />
+              {nextReturnTo ? "通过并下一条" : "通过并公开"}
+            </ActionButton>
+            <ActionButton
+              className="min-h-11 flex-1 rounded-sm whitespace-nowrap xl:flex-none"
+              name="decision"
+              pendingLabel="处理中"
+              type="submit"
+              value="rejected"
+              variant="outline"
+            >
+              <XCircle aria-hidden="true" />
+              {nextReturnTo ? "驳回并下一条" : "驳回"}
+            </ActionButton>
             {prompt.reviewStatus !== "pending" ? (
               <ActionButton
-                className="min-h-11 w-full rounded-sm"
+                aria-label="退回待审核"
+                className="min-h-11 rounded-sm px-3"
                 name="decision"
                 pendingLabel="处理中"
+                title="退回待审核"
                 type="submit"
                 value="pending"
                 variant="ghost"
               >
                 <RotateCcw aria-hidden="true" />
-                退回待审核
               </ActionButton>
             ) : null}
-          </form>
-        </div>
-
-        {prompt.reviewHistory.length ? (
-          <details className="group mt-6 border-t border-border pt-5">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-medium text-foreground marker:content-none">
-              <History aria-hidden="true" className="size-4 text-muted-foreground" />
-              审核历史
-              <span className="text-xs font-normal tabular-nums text-muted-foreground">
-                {prompt.reviewHistory.length} 条
-              </span>
-              <span className="ml-auto text-xs text-muted-foreground group-open:hidden">展开</span>
-              <span className="ml-auto hidden text-xs text-muted-foreground group-open:inline">收起</span>
-            </summary>
-            <ol className="divide-y divide-border border-t border-border">
-              {prompt.reviewHistory.map((review) => (
-                <li className="grid gap-2 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start sm:gap-4" key={review.id}>
-                  <PromptReviewBadge status={review.decision} />
-                  <div className="min-w-0 text-sm text-foreground">
-                    <p>{review.reviewerName}</p>
-                    {review.note ? (
-                      <p className="mt-1 whitespace-pre-wrap leading-6 text-muted-foreground">{review.note}</p>
-                    ) : (
-                      <p className="mt-1 text-muted-foreground">未填写备注</p>
-                    )}
-                  </div>
-                  <time className="text-xs text-muted-foreground" dateTime={review.reviewedAt}>
-                    {reviewDateFormatter.format(new Date(review.reviewedAt))}
-                  </time>
-                </li>
-              ))}
-            </ol>
-          </details>
-        ) : null}
+          </div>
+        </form>
       </section>
       <AdminPromptEditor aiTools={modelDirectory.items} categories={taxonomy.categories} collections={collections} initial={prompt} key={`${prompt.title}:${prompt.images.map((image) => image.id).join(":")}`} tags={taxonomy.tags} />
+
+      {prompt.reviewHistory.length ? (
+        <details className="group mt-10 border-y border-border">
+          <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 text-sm font-medium text-foreground marker:content-none">
+            <History aria-hidden="true" className="size-4 text-muted-foreground" />
+            审核历史
+            <span className="text-xs font-normal tabular-nums text-muted-foreground">
+              {prompt.reviewHistory.length} 条
+            </span>
+            <span className="ml-auto text-xs text-muted-foreground group-open:hidden">展开</span>
+            <span className="ml-auto hidden text-xs text-muted-foreground group-open:inline">收起</span>
+          </summary>
+          <ol className="divide-y divide-border border-t border-border">
+            {prompt.reviewHistory.map((review) => (
+              <li className="grid gap-2 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start sm:gap-4" key={review.id}>
+                <PromptReviewBadge status={review.decision} />
+                <div className="min-w-0 text-sm text-foreground">
+                  <p>{review.reviewerName}</p>
+                  {review.note ? (
+                    <p className="mt-1 whitespace-pre-wrap leading-6 text-muted-foreground">{review.note}</p>
+                  ) : (
+                    <p className="mt-1 text-muted-foreground">未填写备注</p>
+                  )}
+                </div>
+                <time className="text-xs text-muted-foreground" dateTime={review.reviewedAt}>
+                  {reviewDateFormatter.format(new Date(review.reviewedAt))}
+                </time>
+              </li>
+            ))}
+          </ol>
+        </details>
+      ) : null}
     </main>
   );
 }

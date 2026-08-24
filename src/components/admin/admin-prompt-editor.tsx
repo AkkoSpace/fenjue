@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
   ExternalLink,
   ImagePlus,
   LoaderCircle,
@@ -30,7 +31,10 @@ import {
 import type { AdminCollection } from "@/lib/admin/editorial-queries";
 import type { AdminPromptDetail } from "@/lib/admin/queries";
 import type { AiTool, AiToolKey } from "@/lib/content/ai-tools";
-import type { ContentRelation } from "@/lib/content/relation";
+import {
+  getContentRelationOption,
+  type ContentRelation,
+} from "@/lib/content/relation";
 import type { TaxonomyCategory, TaxonomyTag } from "@/lib/content/taxonomy";
 import {
   isSupportedImageType,
@@ -333,36 +337,73 @@ export function AdminPromptEditor({
     images.findIndex((image) => image.id === selectedImageId),
   );
   const selectedImage = images[selectedImageIndex];
+  const categoryName =
+    categories.find((category) => category.key === categoryKey)?.name ?? "未分类";
+  const selectedTagNames = tags
+    .filter((tag) => tagKeys.includes(tag.key))
+    .map((tag) => tag.name);
+  const selectedToolNames = aiTools
+    .filter((tool) => verifiedTools.includes(tool.key))
+    .map((tool) => tool.name);
+  const relationName = getContentRelationOption(contentRelation).label;
 
   return (
-    <form className="mt-8" onSubmit={handleSubmit}>
-      <div className="grid items-start gap-10 xl:grid-cols-[minmax(0,0.9fr)_minmax(24rem,0.68fr)] xl:gap-14">
-        <div className="space-y-10">
+    <form className="mt-6" onSubmit={handleSubmit}>
+      <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1.08fr)_minmax(26rem,0.82fr)] xl:gap-10">
+        <div className="order-2 min-w-0 space-y-4">
           <section aria-labelledby="edit-content-heading">
             <div className="mb-5 flex items-baseline gap-3 border-b border-border pb-3">
-              <span aria-hidden="true" className="font-serif text-sm text-primary">壹</span>
-              <h2 className="font-serif text-xl" id="edit-content-heading">作品内容</h2>
+              <span aria-hidden="true" className="font-serif text-sm text-primary">贰</span>
+              <div>
+                <h2 className="font-serif text-xl" id="edit-content-heading">标题与提示词</h2>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  先核对用户最终会看到和复制的核心内容。
+                </p>
+              </div>
             </div>
             <div className="space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="admin-title">标题</label>
                 <Input id="admin-title" maxLength={120} onChange={(event) => setTitle(event.target.value)} required value={title} />
               </div>
-              <TaxonomySelector categories={categories} categoryKey={categoryKey} disabled={isSaving} onCategoryChange={setCategoryKey} onTagKeysChange={setTagKeys} tagKeys={tagKeys} tags={tags} />
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="admin-prompt">完整提示词</label>
-                <Textarea id="admin-prompt" maxLength={20000} onChange={(event) => setPrompt(event.target.value)} required rows={14} value={prompt} />
+                <Textarea className="min-h-72 resize-y leading-6" id="admin-prompt" maxLength={20000} onChange={(event) => setPrompt(event.target.value)} required rows={12} value={prompt} />
                 <p className="text-right text-xs text-muted-foreground">{prompt.length} / 20000</p>
               </div>
             </div>
           </section>
 
-          <section aria-labelledby="edit-source-heading">
-            <div className="mb-5 flex items-baseline gap-3 border-b border-border pb-3">
-              <span aria-hidden="true" className="font-serif text-sm text-primary">贰</span>
-              <h2 className="font-serif text-xl" id="edit-source-heading">作者与来源</h2>
+          <details className="group border-y border-border">
+            <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-3 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-foreground">分类与标签</span>
+                <span className="mt-1 block truncate text-xs text-muted-foreground">
+                  {categoryName} · {selectedTagNames.length ? selectedTagNames.join(" / ") : "未选择标签"}
+                </span>
+              </span>
+              <span className="text-xs text-muted-foreground group-open:hidden">编辑</span>
+              <span className="hidden text-xs text-muted-foreground group-open:inline">收起</span>
+              <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+            </summary>
+            <div className="pb-6 pt-2">
+              <TaxonomySelector categories={categories} categoryKey={categoryKey} className="border-y-0 py-0" disabled={isSaving} onCategoryChange={setCategoryKey} onTagKeysChange={setTagKeys} tagKeys={tagKeys} tags={tags} />
             </div>
-            <div className="space-y-5">
+          </details>
+
+          <details className="group border-b border-border">
+            <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-3 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-foreground">作者、来源与模型</span>
+                <span className="mt-1 block truncate text-xs text-muted-foreground">
+                  {authorName} · {relationName} · {selectedToolNames.length ? selectedToolNames.join(" / ") : "未标记模型"}
+                </span>
+              </span>
+              <span className="text-xs text-muted-foreground group-open:hidden">核对</span>
+              <span className="hidden text-xs text-muted-foreground group-open:inline">收起</span>
+              <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+            </summary>
+            <div className="space-y-5 pb-6 pt-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="admin-author">作者名称</label>
                 <Input id="admin-author" maxLength={80} onChange={(event) => setAuthorName(event.target.value)} required value={authorName} />
@@ -377,6 +418,22 @@ export function AdminPromptEditor({
               </div>
               <ContentRelationSelector disabled={isSaving} onChange={setContentRelation} value={contentRelation} />
               <VerifiedToolsSelector disabled={isSaving} onChange={setVerifiedTools} tools={aiTools} value={verifiedTools} />
+            </div>
+          </details>
+
+          <details className="group border-b border-border">
+            <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-3 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-foreground">精选与专栏</span>
+                <span className="mt-1 block truncate text-xs text-muted-foreground">
+                  {featured ? "司录精选" : "普通收录"} · {collectionMemberships.length ? `${collectionMemberships.length} 个专栏` : "未收录专栏"}
+                </span>
+              </span>
+              <span className="text-xs text-muted-foreground group-open:hidden">设置</span>
+              <span className="hidden text-xs text-muted-foreground group-open:inline">收起</span>
+              <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+            </summary>
+            <div className="pb-6 pt-2">
               <EditorialSelector
                 collections={collections}
                 disabled={isSaving}
@@ -390,14 +447,28 @@ export function AdminPromptEditor({
                 onMembershipsChange={setCollectionMemberships}
               />
             </div>
-          </section>
+          </details>
+
+          <div aria-live="polite" className="min-h-6 pt-2">
+            {error ? <p className="text-sm leading-6 text-destructive">{error}</p> : isSaving ? (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground"><LoaderCircle aria-hidden="true" className="size-4 animate-spin" />{uploadProgress.total ? `正在上传 ${uploadProgress.done} / ${uploadProgress.total}` : "正在保存修改"}</p>
+            ) : null}
+          </div>
+
+          <Button className="min-h-11 w-full rounded-sm" disabled={isSaving} size="lg" type="submit" variant="outline">
+            {isSaving ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <Save aria-hidden="true" />}
+            {isSaving ? "正在保存" : "保存内容修改"}
+          </Button>
         </div>
 
-        <section aria-labelledby="edit-images-heading" className="xl:sticky xl:top-6">
+        <section aria-labelledby="edit-images-heading" className="order-1 min-w-0 xl:sticky xl:top-28">
           <div className="mb-5 flex items-baseline justify-between gap-3 border-b border-border pb-3">
             <div className="flex items-baseline gap-3">
-              <span aria-hidden="true" className="font-serif text-sm text-primary">叁</span>
-              <h2 className="font-serif text-xl" id="edit-images-heading">图片与内容标记</h2>
+              <span aria-hidden="true" className="font-serif text-sm text-primary">壹</span>
+              <div>
+                <h2 className="font-serif text-xl" id="edit-images-heading">作品画面</h2>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">封面、顺序与敏感内容标记</p>
+              </div>
             </div>
             <span className="text-xs text-muted-foreground">{images.length} / {MAX_PROMPT_IMAGES}</span>
           </div>
@@ -418,15 +489,14 @@ export function AdminPromptEditor({
           {selectedImage ? (
             <figure>
               <div
-                className="relative grid min-h-72 place-items-center overflow-hidden border border-border/80 bg-muted/35 sm:min-h-96"
-                style={{ aspectRatio: "4 / 3" }}
+                className="relative grid h-[clamp(28rem,66vh,44rem)] place-items-center overflow-hidden border border-border/80 bg-muted/30"
               >
                 <Image
                   alt={selectedImage.alt || `作品图片 ${selectedImageIndex + 1}`}
                   className="object-contain"
                   fill
                   priority
-                  sizes="(max-width: 1279px) 100vw, 42vw"
+                  sizes="(max-width: 1279px) calc(100vw - 2.5rem), 54vw"
                   src={selectedImage.previewUrl}
                   unoptimized={Boolean(selectedImage.file)}
                 />
@@ -572,16 +642,6 @@ export function AdminPromptEditor({
             </div>
           </div>
 
-          <div aria-live="polite" className="mt-5 min-h-6">
-            {error ? <p className="text-sm leading-6 text-destructive">{error}</p> : isSaving ? (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground"><LoaderCircle aria-hidden="true" className="size-4 animate-spin" />{uploadProgress.total ? `正在上传 ${uploadProgress.done} / ${uploadProgress.total}` : "正在保存修改"}</p>
-            ) : null}
-          </div>
-
-          <Button className="mt-2 min-h-11 w-full rounded-sm" disabled={isSaving} size="lg" type="submit">
-            {isSaving ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <Save aria-hidden="true" />}
-            {isSaving ? "正在保存" : "保存修改"}
-          </Button>
         </section>
       </div>
     </form>

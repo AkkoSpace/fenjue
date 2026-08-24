@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 interface TaxonomySelectorProps {
   categories: TaxonomyCategory[];
   categoryKey: string;
+  className?: string;
   disabled?: boolean;
   onCategoryChange: (key: string) => void;
   onTagKeysChange: (keys: string[]) => void;
@@ -35,6 +36,7 @@ function optionClassName(selected: boolean, unavailable = false) {
 export function TaxonomySelector({
   categories,
   categoryKey,
+  className,
   disabled = false,
   onCategoryChange,
   onTagKeysChange,
@@ -53,7 +55,7 @@ export function TaxonomySelector({
   }
 
   return (
-    <div className="space-y-6 border-y border-border/80 py-5">
+    <div className={cn("space-y-6 border-y border-border/80 py-5", className)}>
       <fieldset>
         <legend className="text-sm font-medium text-foreground">主分类</legend>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
