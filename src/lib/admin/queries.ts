@@ -1,5 +1,6 @@
 import "server-only";
 
+import { getAdminAnalyticsStorageOverview } from "@/lib/admin/analytics-queries";
 import { requireAdmin } from "@/lib/auth/authorization";
 import {
   aiToolFromRelation,
@@ -637,7 +638,15 @@ export async function getAdminReviewNavigation({
 export async function getAdminOverview() {
   const content = await getAdminPrompts({});
   const { supabase } = await requireAdmin();
-  const [users, categories, tags, collections, comments, engagement] = await Promise.all([
+  const [
+    users,
+    categories,
+    tags,
+    collections,
+    comments,
+    engagement,
+    analyticsStorage,
+  ] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("categories").select("key", { count: "exact", head: true }),
     supabase.from("tags").select("key", { count: "exact", head: true }),
@@ -647,6 +656,7 @@ export async function getAdminOverview() {
       .select("id", { count: "exact", head: true })
       .eq("review_status", "pending"),
     supabase.rpc("admin_get_engagement_overview"),
+    getAdminAnalyticsStorageOverview(),
   ]);
 
   const error = users.error ?? categories.error ?? tags.error ??
@@ -659,10 +669,14 @@ export async function getAdminOverview() {
     engagement.data && typeof engagement.data === "object"
       ? (engagement.data as Record<string, unknown>)
       : {};
-  const count = (value: unknown) =>
-    typeof value === "number" && Number.isSafeInteger(value) && value > 0
-      ? value
+  const count = (value: unknown) => {
+    const parsed = typeof value === "string" ? Number(value) : value;
+    return typeof parsed === "number" &&
+      Number.isSafeInteger(parsed) &&
+      parsed > 0
+      ? parsed
       : 0;
+  };
 
   return {
     content,
@@ -679,6 +693,7 @@ export async function getAdminOverview() {
       reactions: count(rawEngagement.reactions),
       views: count(rawEngagement.views),
     },
+    analyticsStorage,
     recent: content.items.slice(0, 5),
   };
 }

@@ -1,7 +1,10 @@
 import {
+  Archive,
   ArrowRight,
   BookOpenText,
+  Clock,
   Copy,
+  Database,
   Eye,
   Flame,
   FolderTree,
@@ -29,6 +32,21 @@ export const metadata: Metadata = {
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   dateStyle: "medium",
 });
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024;
+  let unit = units[0];
+
+  for (let index = 1; index < units.length && value >= 1024; index += 1) {
+    value /= 1024;
+    unit = units[index];
+  }
+
+  return `${value.toLocaleString("zh-CN", { maximumFractionDigits: 1 })} ${unit}`;
+}
 
 function OverviewFallback() {
   return (
@@ -117,6 +135,34 @@ async function OverviewContent() {
       value: data.engagement.reactions,
     },
   ];
+  const analyticsStorageStats = [
+    {
+      detail: data.analyticsStorage.oldestHotEventDate
+        ? `最早在线明细：${dateFormatter.format(
+            new Date(`${data.analyticsStorage.oldestHotEventDate}T00:00:00Z`),
+          )}`
+        : "当前没有浏览或复制明细",
+      icon: Database,
+      label: "在线明细",
+      value: data.analyticsStorage.retainedEvents.toLocaleString("zh-CN"),
+    },
+    {
+      detail: `${data.analyticsStorage.archivedFiles.toLocaleString("zh-CN")} 个压缩归档文件`,
+      icon: Archive,
+      label: "历史归档",
+      value: data.analyticsStorage.archivedEvents.toLocaleString("zh-CN"),
+    },
+    {
+      detail: data.analyticsStorage.lastArchivedAt
+        ? `最近归档：${dateFormatter.format(
+            new Date(data.analyticsStorage.lastArchivedAt),
+          )}`
+        : "尚未产生超过保留期的数据",
+      icon: Clock,
+      label: "归档体积",
+      value: formatBytes(data.analyticsStorage.archivedBytes),
+    },
+  ];
 
   return (
     <main>
@@ -184,6 +230,53 @@ async function OverviewContent() {
             );
           })}
         </div>
+      </section>
+
+      <section aria-labelledby="storage-heading" className="mt-9">
+        <div className="flex flex-col gap-2 border-b border-border pb-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs tracking-[0.16em] text-primary uppercase">
+              Analytics storage · 统计存储
+            </p>
+            <h2 className="mt-1 font-serif text-2xl" id="storage-heading">
+              明细保留与归档
+            </h2>
+          </div>
+          <p className="max-w-xl text-xs leading-5 text-muted-foreground">
+            最近 {data.analyticsStorage.retentionDays} 天明细在线查询，按日汇总永久保留；
+            更早的匿名明细压缩到私有 R2。
+          </p>
+        </div>
+        <div className="grid gap-px bg-border sm:grid-cols-3">
+          {analyticsStorageStats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div className="bg-background p-5" key={stat.label}>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <Icon aria-hidden="true" className="size-4 text-primary" />
+                </div>
+                <p className="mt-5 text-3xl font-medium tabular-nums text-foreground">
+                  {stat.value}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  {stat.detail}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+        {!data.analyticsStorage.configured ? (
+          <p className="border-x border-b border-border px-5 py-3 text-xs leading-5 text-amber-800">
+            {data.analyticsStorage.usesPublicImageBucket
+              ? "统计归档不能使用公开图片桶，请配置独立的私有 R2 存储桶。"
+              : "归档任务尚未完成服务端配置；明细会继续安全保留在 Supabase，不会被删除。"}
+          </p>
+        ) : data.analyticsStorage.pendingBatches > 0 ? (
+          <p className="border-x border-b border-border px-5 py-3 text-xs leading-5 text-muted-foreground">
+            有 {data.analyticsStorage.pendingBatches} 个归档批次等待自动重试。
+          </p>
+        ) : null}
       </section>
 
       <div className="mt-10 grid items-start gap-10 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">

@@ -25,7 +25,9 @@
 ## 数据模型
 
 - `prompt_engagement_totals`：每条作品一行的累计汇总，详情页和管理总览直接读取。
-- `prompt_metric_events`：浏览与复制的每日幂等键，仅用于去重和审计，不向客户端开放明细。
+- `prompt_metric_events`：最近 180 天浏览与复制的每日幂等键，用于去重和近期审计，不向客户端开放明细。
+- `prompt_metric_daily_totals`：永久保留的作品每日浏览与复制汇总，原始事件归档后仍然存在。
+- `prompt_metric_archive_batches`：私有 R2 压缩归档的可重试清单、校验摘要和完成状态。
 - `prompt_likes`：登录用户与作品的喜欢关系。
 - `prompt_reactions`：登录用户与作品的单一品阶关系。
 
@@ -54,4 +56,6 @@ Supabase Advisor 会把暴露给 `anon` 或 `authenticated` 的 `SECURITY DEFINE
 - Vercel Web Analytics 继续用于站点级访问与渠道观察；Speed Insights 用于真实用户性能；它们不替代作品级业务指标。
 - 当前管理后台只有全站累计汇总，不提供趋势、来源拆分、作品排行、用户明细或导出。
 - 每日去重能降低刷新和连续点击造成的噪声，但不是完整的反作弊系统；代理切换、清除 Cookie 或自动化流量仍可能产生偏差。
-- `prompt_metric_events` 会持续增长，已为创建时间建立索引；数据规模明显增加后再制定保留周期和聚合归档任务。
+- 浏览与复制的原始事件默认在 Supabase 在线保留 180 天；更早事件按批次压缩为 NDJSON + Gzip，校验后转存到独立的私有 R2 桶。累计值和每日汇总不因归档而减少。
+- 喜欢、Reaction 和用户实测心得是当前状态或正式内容，不属于可归档流水，继续保留在 Supabase。
+- 归档任务失败时不会删除原事件；批次会释放租约并在后续定时任务中覆盖同一对象后重试。完整运维说明见 [`ANALYTICS_RETENTION.md`](ANALYTICS_RETENTION.md)。
