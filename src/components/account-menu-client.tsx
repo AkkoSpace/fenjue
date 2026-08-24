@@ -18,6 +18,7 @@ interface AccountMenuClientProps {
   email: string;
   identity: string;
   isAdmin: boolean;
+  unreadNotifications: number;
 }
 
 const menuItemClassName =
@@ -43,7 +44,7 @@ function AccountIdentity({
   displayName,
   email,
   identity,
-}: Omit<AccountMenuClientProps, "isAdmin">) {
+}: Omit<AccountMenuClientProps, "isAdmin" | "unreadNotifications">) {
   return (
     <div className="relative flex gap-3 border-b border-border/80 px-4 py-4">
       <span
@@ -67,11 +68,13 @@ function AccountIdentity({
 }
 
 function AccountLink({
+  badge,
   code,
   href,
   icon: Icon,
   label,
 }: {
+  badge?: number;
   code: string;
   href: string;
   icon: LucideIcon;
@@ -85,6 +88,11 @@ function AccountLink({
     >
       <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
       <span className="flex-1">{label}</span>
+      {badge ? (
+        <span className="grid min-w-5 place-items-center bg-primary px-1 text-[0.65rem] leading-5 text-primary-foreground">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
       <span className="font-mono text-[0.65rem] tracking-wider text-muted-foreground">
         {code}
       </span>
@@ -92,10 +100,19 @@ function AccountLink({
   );
 }
 
-function AccountLinks({ isAdmin }: Pick<AccountMenuClientProps, "isAdmin">) {
+function AccountLinks({
+  isAdmin,
+  unreadNotifications,
+}: Pick<AccountMenuClientProps, "isAdmin" | "unreadNotifications">) {
   return (
     <div className="py-1.5">
-      <AccountLink code="ACCOUNT" href="/account" icon={UserRound} label="我的账户" />
+      <AccountLink
+        badge={unreadNotifications}
+        code="ACCOUNT"
+        href="/account"
+        icon={UserRound}
+        label="我的账户"
+      />
       <AccountLink code="SUBMIT" href="/submit" icon={Upload} label="提交作品" />
       {isAdmin ? (
         <AccountLink code="ADMIN" href="/admin" icon={ShieldCheck} label="管理后台" />
@@ -127,11 +144,20 @@ export function AccountMenuClient({
   email,
   identity,
   isAdmin,
+  unreadNotifications,
 }: AccountMenuClientProps) {
   return (
     <Menu.Root>
       <Menu.Trigger className="group inline-flex min-h-11 max-w-48 items-center gap-2 px-1 text-foreground outline-none transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring data-popup-open:text-primary">
-        <AvatarMark text={avatarText} />
+        <span className="relative">
+          <AvatarMark text={avatarText} />
+          {unreadNotifications ? (
+            <span
+              aria-label={`${unreadNotifications} 条未读审核通知`}
+              className="absolute -right-1 -top-1 size-2.5 border-2 border-background bg-primary"
+            />
+          ) : null}
+        </span>
         <span className="hidden max-w-28 truncate text-sm lg:block">
           {displayName}
         </span>
@@ -157,7 +183,10 @@ export function AccountMenuClient({
               email={email}
               identity={identity}
             />
-            <AccountLinks isAdmin={isAdmin} />
+            <AccountLinks
+              isAdmin={isAdmin}
+              unreadNotifications={unreadNotifications}
+            />
             <SignOutItem />
           </Menu.Popup>
         </Menu.Positioner>

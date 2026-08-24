@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   publishPrompt,
   type PublishPromptImageInput,
+  updateOwnPrompt,
 } from "@/lib/content/actions";
 import type { AiTool, AiToolKey } from "@/lib/content/ai-tools";
 import type { ContentRelation } from "@/lib/content/relation";
@@ -39,7 +40,30 @@ interface PromptEditorProps {
   aiTools: AiTool[];
   categories: TaxonomyCategory[];
   defaultAuthorName: string;
+  initialValue?: PromptEditorInitialValue;
   tags: TaxonomyTag[];
+}
+
+export interface PromptEditorInitialValue {
+  authorName: string;
+  authorUrl: string;
+  categoryKey: string;
+  contentRelation: ContentRelation;
+  id: string;
+  images: {
+    alt: string;
+    height: number;
+    id: string;
+    objectKey: string;
+    src: string;
+    width: number;
+  }[];
+  isNsfw: boolean;
+  prompt: string;
+  sourceUrl: string;
+  tagKeys: string[];
+  title: string;
+  verifiedTools: AiToolKey[];
 }
 
 interface UploadedImage {
@@ -47,7 +71,8 @@ interface UploadedImage {
 }
 
 interface EditorImage {
-  file: File;
+  alt: string;
+  file?: File;
   height: number;
   id: string;
   previewUrl: string;
@@ -91,22 +116,40 @@ export function PromptEditor({
   aiTools,
   categories,
   defaultAuthorName,
+  initialValue,
   tags,
 }: PromptEditorProps) {
   const router = useRouter();
   const imagesRef = useRef<EditorImage[]>([]);
-  const [title, setTitle] = useState("");
-  const [prompt, setPrompt] = useState("");
-  const [authorName, setAuthorName] = useState(defaultAuthorName);
-  const [authorUrl, setAuthorUrl] = useState("");
-  const [categoryKey, setCategoryKey] = useState("");
+  const [title, setTitle] = useState(initialValue?.title ?? "");
+  const [prompt, setPrompt] = useState(initialValue?.prompt ?? "");
+  const [authorName, setAuthorName] = useState(
+    initialValue?.authorName ?? defaultAuthorName,
+  );
+  const [authorUrl, setAuthorUrl] = useState(initialValue?.authorUrl ?? "");
+  const [categoryKey, setCategoryKey] = useState(
+    initialValue?.categoryKey ?? "",
+  );
   const [contentRelation, setContentRelation] =
-    useState<ContentRelation>("repost");
-  const [tagKeys, setTagKeys] = useState<string[]>([]);
-  const [verifiedTools, setVerifiedTools] = useState<AiToolKey[]>([]);
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [images, setImages] = useState<EditorImage[]>([]);
-  const [isNsfw, setIsNsfw] = useState(false);
+    useState<ContentRelation>(initialValue?.contentRelation ?? "repost");
+  const [tagKeys, setTagKeys] = useState<string[]>(
+    initialValue?.tagKeys ?? [],
+  );
+  const [verifiedTools, setVerifiedTools] = useState<AiToolKey[]>(
+    initialValue?.verifiedTools ?? [],
+  );
+  const [sourceUrl, setSourceUrl] = useState(initialValue?.sourceUrl ?? "");
+  const [images, setImages] = useState<EditorImage[]>(
+    initialValue?.images.map((image) => ({
+      alt: image.alt,
+      height: image.height,
+      id: image.id,
+      previewUrl: image.src,
+      uploaded: { objectKey: image.objectKey },
+      width: image.width,
+    })) ?? [],
+  );
+  const [isNsfw, setIsNsfw] = useState(initialValue?.isNsfw ?? false);
   const [error, setError] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [uploadedCount, setUploadedCount] = useState(0);
@@ -117,7 +160,9 @@ export function PromptEditor({
 
   useEffect(() => {
     return () => {
-      imagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+      imagesRef.current.forEach((image) => {
+        if (image.file) URL.revokeObjectURL(image.previewUrl);
+      });
     };
   }, []);
 
@@ -148,6 +193,7 @@ export function PromptEditor({
           const dimensions = await imageDimensions(file);
           return {
             ...dimensions,
+            alt: "",
             file,
             id: crypto.randomUUID(),
             previewUrl: URL.createObjectURL(file),
@@ -165,7 +211,7 @@ export function PromptEditor({
   function removeImage(id: string) {
     setImages((current) => {
       const removed = current.find((image) => image.id === id);
-      if (removed) {
+      if (removed?.file) {
         URL.revokeObjectURL(removed.previewUrl);
       }
       return current.filter((image) => image.id !== id);
@@ -188,6 +234,10 @@ export function PromptEditor({
   async function uploadImage(image: EditorImage) {
     if (image.uploaded) {
       return image.uploaded;
+    }
+
+    if (!image.file) {
+      throw new Error("图片信息不完整，请删除后重新添加。");
     }
 
     const presignResponse = await fetch("/api/uploads/presign", {
@@ -253,14 +303,16 @@ export function PromptEditor({
       const uploadedImages = await Promise.all(images.map(uploadImage));
       const imageInputs: PublishPromptImageInput[] = uploadedImages.map(
         (uploaded, index) => ({
-          alt: `${title.trim()}${images.length > 1 ? ` ${index + 1}` : ""}`,
+          alt:
+            images[index].alt ||
+            `${title.trim()}${images.length > 1 ? ` ${index + 1}` : ""}`,
           height: images[index].height,
           objectKey: uploaded.objectKey,
           position: index + 1,
           width: images[index].width,
         }),
       );
-      const result = await publishPrompt({
+      const contentInput = {
         authorName,
         authorUrl,
         categoryKey,
@@ -272,7 +324,10 @@ export function PromptEditor({
         tagKeys,
         title,
         verifiedTools,
-      });
+      };
+      const result = initialValue
+        ? await updateOwnPrompt({ ...contentInput, id: initialValue.id })
+        : await publishPrompt(contentInput);
 
       if (!result.ok) {
         setError(result.error);
@@ -280,7 +335,11 @@ export function PromptEditor({
       }
 
       const params = new URLSearchParams({
-        success: "作品已提交，审核通过后会公开展示。",
+        success: initialValue
+          ? `修改已保存，作品已经重新进入审核。${
+              "warning" in result && result.warning ? ` ${result.warning}` : ""
+            }`
+          : "作品已提交，审核通过后会公开展示。",
       });
       router.push(`/account?${params.toString()}`);
       router.refresh();
@@ -576,7 +635,11 @@ export function PromptEditor({
             ) : isPublishing ? (
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
                 <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-                正在上传 {uploadedCount} / {images.length}
+                {uploadedCount < images.length
+                  ? `正在上传 ${uploadedCount} / ${images.length}`
+                  : initialValue
+                    ? "正在保存并重新提交审核"
+                    : "正在提交审核"}
               </p>
             ) : null}
           </div>
@@ -592,7 +655,13 @@ export function PromptEditor({
             ) : (
               <Upload aria-hidden="true" />
             )}
-            {isPublishing ? "正在提交" : "提交审核"}
+            {isPublishing
+              ? initialValue
+                ? "正在保存"
+                : "正在提交"
+              : initialValue
+                ? "保存并重新提交"
+                : "提交审核"}
           </Button>
         </section>
       </div>

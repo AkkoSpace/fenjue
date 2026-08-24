@@ -1,4 +1,12 @@
-import { ArrowRight, LogOut, MessageSquareText, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  Bell,
+  Check,
+  LogOut,
+  MessageSquareText,
+  Pencil,
+  ShieldCheck,
+} from "lucide-react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -10,6 +18,10 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { signOut } from "@/lib/auth/actions";
 import { type AuthPageProps, getAuthPageState } from "@/lib/auth/page";
 import type { PromptReviewStatus } from "@/lib/content/review";
+import {
+  markAllNotificationsRead,
+  openNotification,
+} from "@/lib/content/notification-actions";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -48,7 +60,13 @@ async function AccountContent({ searchParams }: AuthPageProps) {
     redirect("/login?next=/account");
   }
 
-  const [profileResult, submissionResult, commentResult, { message }] = await Promise.all([
+  const [
+    profileResult,
+    submissionResult,
+    commentResult,
+    notificationResult,
+    { message },
+  ] = await Promise.all([
     supabase
       .from("profiles")
       .select("display_name,is_super_admin,role")
@@ -59,7 +77,7 @@ async function AccountContent({ searchParams }: AuthPageProps) {
       .select("id,slug,title,review_status,review_note,published,created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(5),
+      .limit(20),
     supabase
       .from("prompt_comments")
       .select(
@@ -68,6 +86,12 @@ async function AccountContent({ searchParams }: AuthPageProps) {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("notifications")
+      .select("id,title,body,read_at,created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(10),
     getAuthPageState(searchParams),
   ]);
   const profile = profileResult.data;
@@ -76,6 +100,9 @@ async function AccountContent({ searchParams }: AuthPageProps) {
   }
   if (commentResult.error) {
     console.warn("Unable to load account comments", commentResult.error.code);
+  }
+  if (notificationResult.error) {
+    console.warn("Unable to load account notifications", notificationResult.error.code);
   }
   const submissions = (submissionResult.data ?? []) as {
     created_at: string;
@@ -108,6 +135,16 @@ async function AccountContent({ searchParams }: AuthPageProps) {
     const prompt = Array.isArray(row.prompt) ? row.prompt[0] : row.prompt;
     return prompt ? [{ ...row, prompt }] : [];
   });
+  const notifications = (notificationResult.data ?? []) as {
+    body: string;
+    created_at: string;
+    id: string;
+    read_at: string | null;
+    title: string;
+  }[];
+  const unreadNotifications = notifications.filter(
+    (notification) => !notification.read_at,
+  ).length;
   const isAdmin = profile?.role === "admin";
   const identity = profile?.is_super_admin
     ? "超级管理员"
@@ -138,6 +175,64 @@ async function AccountContent({ searchParams }: AuthPageProps) {
           <dd className="text-foreground">{identity}</dd>
         </div>
       </dl>
+
+      {notifications.length ? (
+        <section aria-labelledby="notifications-heading" className="mt-7">
+          <div className="flex items-end justify-between gap-4 border-b border-border pb-3">
+            <div>
+              <p className="text-xs tracking-[0.16em] text-primary uppercase">
+                Notices
+              </p>
+              <h2 className="mt-1 font-serif text-xl" id="notifications-heading">
+                审核通知
+              </h2>
+            </div>
+            {unreadNotifications ? (
+              <form action={markAllNotificationsRead}>
+                <Button className="min-h-11" size="sm" type="submit" variant="ghost">
+                  <Check aria-hidden="true" />
+                  全部已读
+                </Button>
+              </form>
+            ) : (
+              <Bell aria-hidden="true" className="size-4 text-muted-foreground" />
+            )}
+          </div>
+          <div className="divide-y divide-border">
+            {notifications.map((notification) => (
+              <form
+                action={openNotification.bind(null, notification.id)}
+                key={notification.id}
+              >
+                <button
+                  className="group relative block w-full py-4 pl-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  type="submit"
+                >
+                {!notification.read_at ? (
+                  <span
+                    aria-label="未读"
+                    className="absolute left-0 top-5 size-1.5 bg-primary"
+                  />
+                ) : null}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-medium text-foreground group-hover:text-primary">
+                      {notification.title}
+                    </h3>
+                    <p className="mt-1 line-clamp-2 break-words text-xs leading-5 text-muted-foreground">
+                      {notification.body}
+                    </p>
+                  </div>
+                  <time className="shrink-0 text-[0.6875rem] text-muted-foreground">
+                    {dateFormatter.format(new Date(notification.created_at))}
+                  </time>
+                </div>
+                </button>
+              </form>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section aria-labelledby="submissions-heading" className="mt-7">
         <div className="flex items-end justify-between gap-4 border-b border-border pb-3">
@@ -198,6 +293,17 @@ async function AccountContent({ searchParams }: AuthPageProps) {
                     <p className="mt-2 border-l-2 border-destructive/40 pl-3 text-xs leading-5 text-muted-foreground">
                       {submission.review_note}
                     </p>
+                  ) : null}
+                  {submission.review_status !== "approved" ? (
+                    <Link
+                      className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm text-primary underline decoration-primary/30 underline-offset-4 transition-colors hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      href={`/account/submissions/${submission.id}/edit` as Route}
+                    >
+                      <Pencil aria-hidden="true" className="size-4" />
+                      {submission.review_status === "rejected"
+                        ? "修改并重新提交"
+                        : "继续修改投稿"}
+                    </Link>
                   ) : null}
                 </article>
               );

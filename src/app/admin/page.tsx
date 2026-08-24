@@ -2,6 +2,7 @@ import {
   Archive,
   ArrowRight,
   BookOpenText,
+  CircleAlert,
   Clock,
   Copy,
   Database,
@@ -12,6 +13,7 @@ import {
   ImageUp,
   MessageSquareText,
   Sparkles,
+  Trash2,
   Users,
 } from "lucide-react";
 import type { Metadata, Route } from "next";
@@ -163,6 +165,32 @@ async function OverviewContent() {
       value: formatBytes(data.analyticsStorage.archivedBytes),
     },
   ];
+  const imageStorageStats = [
+    {
+      detail: "已登记且仍被作品引用",
+      icon: Images,
+      label: "在用图片",
+      value: data.imageCleanup.registered,
+    },
+    {
+      detail: data.imageCleanup.oldestPendingAt
+        ? `最早登记：${dateFormatter.format(
+            new Date(data.imageCleanup.oldestPendingAt),
+          )}`
+        : "没有等待清理的对象",
+      icon: Trash2,
+      label: "等待清理",
+      value: data.imageCleanup.pending,
+    },
+    {
+      detail: data.imageCleanup.failed
+        ? "任务会在 6 小时后自动重试"
+        : "最近没有清理失败",
+      icon: CircleAlert,
+      label: "清理失败",
+      value: data.imageCleanup.failed,
+    },
+  ];
 
   return (
     <main>
@@ -275,6 +303,50 @@ async function OverviewContent() {
         ) : data.analyticsStorage.pendingBatches > 0 ? (
           <p className="border-x border-b border-border px-5 py-3 text-xs leading-5 text-muted-foreground">
             有 {data.analyticsStorage.pendingBatches} 个归档批次等待自动重试。
+          </p>
+        ) : null}
+      </section>
+
+      <section aria-labelledby="image-storage-heading" className="mt-9">
+        <div className="flex flex-col gap-2 border-b border-border pb-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs tracking-[0.16em] text-primary uppercase">
+              Image storage · 图片存储
+            </p>
+            <h2 className="mt-1 font-serif text-2xl" id="image-storage-heading">
+              上传登记与自动清理
+            </h2>
+          </div>
+          <p className="max-w-xl text-xs leading-5 text-muted-foreground">
+            未完成投稿的图片保留 24 小时；作品移除的图片立即清理，失败后由每日任务重试。
+          </p>
+        </div>
+        <div className="grid gap-px bg-border sm:grid-cols-3">
+          {imageStorageStats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div className="bg-background p-5" key={stat.label}>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <Icon aria-hidden="true" className="size-4 text-primary" />
+                </div>
+                <p className="mt-5 text-3xl font-medium tabular-nums text-foreground">
+                  {stat.value.toLocaleString("zh-CN")}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  {stat.detail}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+        {!data.imageCleanup.configured ? (
+          <p className="border-x border-b border-border px-5 py-3 text-xs leading-5 text-amber-800">
+            自动清理尚缺少服务端配置：{data.imageCleanup.missing.join("、")}。对象登记会继续保留，不会静默丢失清理任务。
+          </p>
+        ) : data.imageCleanup.failed ? (
+          <p className="border-x border-b border-border px-5 py-3 text-xs leading-5 text-amber-800">
+            有 {data.imageCleanup.failed} 个对象上次清理失败，系统将在下一轮自动重试。
           </p>
         ) : null}
       </section>

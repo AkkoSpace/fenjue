@@ -3,6 +3,7 @@ export interface AuthPageProps {
     error?: string | string[];
     next?: string | string[];
     success?: string | string[];
+    warning?: string | string[];
   }>;
 }
 
@@ -14,6 +15,7 @@ export async function getAuthPageState(searchParams: AuthPageProps["searchParams
   const params = await searchParams;
   const error = first(params.error);
   const success = first(params.success);
+  const warning = first(params.warning);
   const requestedNext = first(params.next);
   const next =
     requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
@@ -25,6 +27,8 @@ export async function getAuthPageState(searchParams: AuthPageProps["searchParams
       ? { kind: "error" as const, text: error }
       : success
         ? { kind: "success" as const, text: success }
+        : warning
+          ? { kind: "warning" as const, text: warning }
         : undefined,
     next,
   };

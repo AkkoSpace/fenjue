@@ -5,7 +5,7 @@ interface AuthShellProps {
   description: string;
   eyebrow: string;
   message?: {
-    kind: "error" | "success";
+    kind: "error" | "success" | "warning";
     text: string;
   };
   title: string;
@@ -45,7 +45,9 @@ export function AuthShell({
               className={
                 message.kind === "error"
                   ? "mb-5 border-l-2 border-destructive bg-destructive/6 px-3 py-2.5 text-sm leading-6 text-destructive"
-                  : "mb-5 border-l-2 border-primary bg-primary/6 px-3 py-2.5 text-sm leading-6 text-foreground"
+                  : message.kind === "warning"
+                    ? "mb-5 border-l-2 border-amber-600 bg-amber-600/6 px-3 py-2.5 text-sm leading-6 text-foreground"
+                    : "mb-5 border-l-2 border-primary bg-primary/6 px-3 py-2.5 text-sm leading-6 text-foreground"
               }
               role={message.kind === "error" ? "alert" : "status"}
             >

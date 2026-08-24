@@ -25,6 +25,7 @@ import {
   normalizeTaxonomyKeys,
 } from "@/lib/content/taxonomy";
 import { deleteImageObjects, hasR2WriteConfig } from "@/lib/r2/server";
+import { markImageCleanupComplete } from "@/lib/uploads/cleanup";
 import { MAX_PROMPT_IMAGES } from "@/lib/uploads/constraints";
 
 import {
@@ -152,9 +153,9 @@ export async function deletePrompt(formData: FormData) {
   updateTag("prompts");
 
   try {
-    await deleteImageObjects(
-      prompt.prompt_images.map((image) => image.object_key),
-    );
+    const objectKeys = prompt.prompt_images.map((image) => image.object_key);
+    await deleteImageObjects(objectKeys);
+    await markImageCleanupComplete(objectKeys);
   } catch (error) {
     console.warn("Unable to delete prompt images from R2", error);
     redirect(
@@ -436,6 +437,7 @@ export async function updateAdminPrompt(
   if (removedKeys.length) {
     try {
       await deleteImageObjects(removedKeys);
+      await markImageCleanupComplete(removedKeys);
     } catch (deleteError) {
       console.warn("Unable to delete removed prompt images from R2", deleteError);
       warnings.push("有旧图片未能从 R2 清理，请稍后人工检查。");

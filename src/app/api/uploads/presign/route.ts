@@ -52,9 +52,20 @@ export async function POST(request: Request) {
   }
 
   try {
-    return NextResponse.json(
-      await createImageUploadUrl(user.id, body.contentType),
-    );
+    const upload = await createImageUploadUrl(user.id, body.contentType);
+    const registration = await supabase.rpc("register_image_upload", {
+      p_object_key: upload.objectKey,
+    });
+
+    if (registration.error) {
+      console.warn("Unable to register image upload", registration.error.code);
+      return NextResponse.json(
+        { error: "无法登记本次上传，请稍后重试。" },
+        { status: 503 },
+      );
+    }
+
+    return NextResponse.json(upload);
   } catch {
     return NextResponse.json(
       { error: "图片存储尚未完成配置，请稍后再试。" },

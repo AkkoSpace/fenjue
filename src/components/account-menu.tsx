@@ -45,11 +45,18 @@ export async function AccountMenu() {
     return <GuestAccountLink />;
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name,is_super_admin,role")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [{ data: profile }, unreadResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name,is_super_admin,role")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("read_at", null),
+  ]);
   const emailName = user.email?.split("@")[0];
   const metadataName =
     typeof user.user_metadata?.display_name === "string"
@@ -74,6 +81,7 @@ export async function AccountMenu() {
       email={user.email ?? "邮箱未设置"}
       identity={identity}
       isAdmin={isAdmin}
+      unreadNotifications={unreadResult.count ?? 0}
     />
   );
 }

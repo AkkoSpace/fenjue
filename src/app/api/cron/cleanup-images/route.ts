@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { archiveOldestPromptMetricBatch } from "@/lib/analytics/archive";
 import { isCronAuthorized } from "@/lib/cron/auth";
+import { cleanupPendingImageUploads } from "@/lib/uploads/cleanup";
 
 export const maxDuration = 60;
 
@@ -11,17 +11,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await archiveOldestPromptMetricBatch();
-    return NextResponse.json(result, {
+    return NextResponse.json(await cleanupPendingImageUploads(), {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
     console.error(
-      "Analytics archive job failed",
+      "Image cleanup job failed",
       error instanceof Error ? error.message : "Unknown error",
     );
     return NextResponse.json(
-      { error: "Analytics archive job failed" },
+      { error: "Image cleanup job failed" },
       { status: 500 },
     );
   }

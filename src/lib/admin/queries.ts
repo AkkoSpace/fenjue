@@ -15,6 +15,7 @@ import type {
   TaxonomyTag,
   TaxonomyTagKind,
 } from "@/lib/content/taxonomy";
+import { getImageCleanupReadiness } from "@/lib/uploads/cleanup";
 
 const PAGE_SIZE = 20;
 const MAX_SEARCH_LENGTH = 80;
@@ -645,6 +646,7 @@ export async function getAdminOverview() {
     collections,
     comments,
     engagement,
+    imageCleanup,
     analyticsStorage,
   ] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
@@ -656,11 +658,12 @@ export async function getAdminOverview() {
       .select("id", { count: "exact", head: true })
       .eq("review_status", "pending"),
     supabase.rpc("admin_get_engagement_overview"),
+    supabase.rpc("admin_get_image_cleanup_overview"),
     getAdminAnalyticsStorageOverview(),
   ]);
 
   const error = users.error ?? categories.error ?? tags.error ??
-    collections.error ?? comments.error ?? engagement.error;
+    collections.error ?? comments.error ?? engagement.error ?? imageCleanup.error;
   if (error) {
     console.warn("Unable to load admin overview", error.code);
   }
@@ -677,6 +680,11 @@ export async function getAdminOverview() {
       ? parsed
       : 0;
   };
+  const rawImageCleanup =
+    imageCleanup.data && typeof imageCleanup.data === "object"
+      ? (imageCleanup.data as Record<string, unknown>)
+      : {};
+  const cleanupReadiness = getImageCleanupReadiness();
 
   return {
     content,
@@ -694,6 +702,17 @@ export async function getAdminOverview() {
       views: count(rawEngagement.views),
     },
     analyticsStorage,
+    imageCleanup: {
+      configured: cleanupReadiness.configured,
+      failed: count(rawImageCleanup.failed_cleanup),
+      missing: cleanupReadiness.missing,
+      oldestPendingAt:
+        typeof rawImageCleanup.oldest_pending_at === "string"
+          ? rawImageCleanup.oldest_pending_at
+          : null,
+      pending: count(rawImageCleanup.pending_cleanup),
+      registered: count(rawImageCleanup.registered_objects),
+    },
     recent: content.items.slice(0, 5),
   };
 }

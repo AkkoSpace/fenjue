@@ -97,5 +97,10 @@ export async function deleteImageObjects(objectKeys: string[]) {
     },
   });
 
-  await getR2Client(config).send(command);
+  const result = await getR2Client(config).send(command);
+  if (result.Errors?.length) {
+    throw new Error(
+      `R2 rejected ${result.Errors.length} image deletion request(s)`,
+    );
+  }
 }
