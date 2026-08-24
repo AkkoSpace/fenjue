@@ -76,7 +76,7 @@ export async function POST(
   }
 
   if (body.action === "reaction" && !isPromptReactionLevel(body.reaction)) {
-    return NextResponse.json({ error: "请选择有效的品阶。" }, { status: 400 });
+    return NextResponse.json({ error: "请选择有效的回应。" }, { status: 400 });
   }
 
   const supabase = await createClient();
@@ -101,7 +101,7 @@ export async function POST(
 
     if (!user) {
       return NextResponse.json(
-        { error: "登录后可以喜欢作品并选择品阶。" },
+        { error: "登录后可以喜欢作品并添加回应。" },
         { status: 401 },
       );
     }

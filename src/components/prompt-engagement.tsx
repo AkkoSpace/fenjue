@@ -1,10 +1,12 @@
 "use client";
 
+import { Menu } from "@base-ui/react/menu";
 import {
   Copy as CopyIcon,
   Eye,
-  Flame,
   Heart,
+  SmilePlus,
+  Sparkles,
 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -198,7 +200,7 @@ export function PromptEngagementProvider({
       if (caught instanceof EngagementRequestError && caught.status === 401) {
         setShowLogin(true);
       } else {
-        setError(caught instanceof Error ? caught.message : "品阶反馈失败。");
+        setError(caught instanceof Error ? caught.message : "回应没有记录成功。");
       }
     } finally {
       setPending(null);
@@ -247,6 +249,151 @@ function Metric({
   );
 }
 
+function ReactionMenuItem({
+  engagement,
+  reaction,
+}: {
+  engagement: PromptEngagementContextValue;
+  reaction: PromptReactionLevel;
+}) {
+  const meta = PROMPT_REACTION_META[reaction];
+  const selected = engagement.user?.reaction === reaction;
+
+  return (
+    <Menu.Item
+      aria-label={`${meta.label}：${meta.description}`}
+      aria-pressed={selected}
+      className={cn(
+        "grid size-12 place-items-center rounded-sm text-[1.35rem] outline-none transition-[background-color,transform] duration-150 data-highlighted:bg-muted active:scale-[0.94] motion-reduce:transition-none",
+        selected && "bg-primary/10 ring-1 ring-inset ring-primary/45",
+      )}
+      closeOnClick
+      nativeButton
+      onClick={() => engagement.toggleReaction(reaction)}
+      render={
+        <button
+          title={`${meta.label}：${meta.description}`}
+          type="button"
+        />
+      }
+    >
+      <span aria-hidden="true">{meta.emoji}</span>
+    </Menu.Item>
+  );
+}
+
+function ReactionMenu({
+  disabled,
+  engagement,
+}: {
+  disabled: boolean;
+  engagement: PromptEngagementContextValue;
+}) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger
+        aria-label="添加作品回应"
+        className="group grid size-11 shrink-0 place-items-center rounded-full border border-border bg-background text-muted-foreground outline-none transition-[border-color,color,transform,background-color] duration-150 hover:border-primary/60 hover:bg-primary/5 hover:text-primary active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-popup-open:border-primary/60 data-popup-open:bg-primary/5 data-popup-open:text-primary disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
+        disabled={disabled}
+      >
+        <SmilePlus aria-hidden="true" className="size-5" />
+      </Menu.Trigger>
+
+      <Menu.Portal>
+        <Menu.Positioner
+          align="start"
+          className="z-50 outline-none"
+          collisionPadding={16}
+          side="top"
+          sideOffset={8}
+        >
+          <Menu.Popup
+            aria-label="选择作品回应"
+            className="origin-[var(--transform-origin)] rounded-sm border border-border bg-popover p-1.5 text-popover-foreground shadow-[0_18px_50px_-24px_oklch(0.24_0.018_70/0.45)] outline-none transition-[transform,opacity] duration-150 data-closed:scale-[0.98] data-closed:opacity-0 data-open:scale-100 data-open:opacity-100 data-starting-style:scale-[0.98] data-starting-style:opacity-0 motion-reduce:transition-none"
+          >
+            <div className="grid grid-cols-4 gap-1">
+              {PROMPT_REACTION_LEVELS.map((reaction) => (
+                <ReactionMenuItem
+                  engagement={engagement}
+                  key={reaction}
+                  reaction={reaction}
+                />
+              ))}
+            </div>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+function ReactionPill({
+  disabled,
+  engagement,
+  reaction,
+}: {
+  disabled: boolean;
+  engagement: PromptEngagementContextValue;
+  reaction: PromptReactionLevel;
+}) {
+  const meta = PROMPT_REACTION_META[reaction];
+  const count = engagement.metrics.reactions[reaction];
+  const selected = engagement.user?.reaction === reaction;
+
+  return (
+    <button
+      aria-label={`${meta.label}，${count} 人回应。${selected ? "再次点击取消" : "点击选择"}`}
+      aria-pressed={selected}
+      className={cn(
+        "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-sm tabular-nums text-foreground outline-none transition-[border-color,color,transform,background-color] duration-150 hover:border-primary/55 hover:bg-primary/5 hover:text-primary active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none",
+        selected && "border-primary/55 bg-primary/8 text-primary",
+      )}
+      disabled={disabled}
+      onClick={() => engagement.toggleReaction(reaction)}
+      title={`${meta.label}：${meta.description}`}
+      type="button"
+    >
+      <span aria-hidden="true" className="text-base leading-none">
+        {meta.emoji}
+      </span>
+      <span>{count.toLocaleString("zh-CN")}</span>
+    </button>
+  );
+}
+
+function ReactionPicker({
+  engagement,
+  total,
+}: {
+  engagement: PromptEngagementContextValue;
+  total: number;
+}) {
+  const populatedReactions = PROMPT_REACTION_LEVELS.filter(
+    (reaction) => engagement.metrics.reactions[reaction] > 0,
+  );
+  const disabled = !engagement.isReady || engagement.pending !== null;
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 sm:mt-0 sm:justify-end">
+      <ReactionMenu disabled={disabled} engagement={engagement} />
+      {populatedReactions.map((reaction) => (
+        <ReactionPill
+          disabled={disabled}
+          engagement={engagement}
+          key={reaction}
+          reaction={reaction}
+        />
+      ))}
+
+      <span className="min-h-11 content-center text-sm text-muted-foreground tabular-nums">
+        {total > 0
+          ? `${total.toLocaleString("zh-CN")} 人回应`
+          : "等待第一份回应"}
+      </span>
+    </div>
+  );
+}
+
 export function PromptEngagementBar({ slug }: { slug: string }) {
   const engagement = usePromptEngagement();
   if (!engagement) return null;
@@ -270,7 +417,7 @@ export function PromptEngagementBar({ slug }: { slug: string }) {
             label="复制"
             value={engagement.metrics.copies}
           />
-          <Metric icon={Flame} label="品阶" value={reactionTotal} />
+          <Metric icon={Sparkles} label="回应" value={reactionTotal} />
         </div>
 
         <Button
@@ -292,40 +439,14 @@ export function PromptEngagementBar({ slug }: { slug: string }) {
         </Button>
       </div>
 
-      <div className="mt-4 border-t border-border/70 pt-4 sm:flex sm:items-end sm:justify-between sm:gap-8">
+      <div className="mt-4 border-t border-border/70 pt-4 sm:flex sm:items-center sm:justify-between sm:gap-8">
         <div className="max-w-md">
-          <h2 className="font-serif text-lg text-foreground">品评此诀</h2>
+          <h2 className="font-serif text-lg text-foreground">回应此诀</h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            只按画面带给你的感觉选择；每人可选一阶，再点一次取消。
+            选一个最贴近你的感受；再次点击可以取消。
           </p>
         </div>
-
-        <div
-          aria-label="选择作品品阶"
-          className="mt-3 grid grid-cols-4 gap-2 sm:mt-0"
-          role="group"
-        >
-          {PROMPT_REACTION_LEVELS.map((reaction) => {
-            const meta = PROMPT_REACTION_META[reaction];
-            const selected = engagement.user?.reaction === reaction;
-            return (
-              <Button
-                aria-label={`${meta.label}：${meta.description}，当前 ${engagement.metrics.reactions[reaction]} 次`}
-                aria-pressed={selected}
-                className="min-h-11 min-w-16 rounded-sm px-2 tabular-nums"
-                disabled={!engagement.isReady || engagement.pending !== null}
-                key={reaction}
-                onClick={() => engagement.toggleReaction(reaction)}
-                title={meta.description}
-                type="button"
-                variant={selected ? "default" : "outline"}
-              >
-                <span className="font-serif">{meta.shortLabel}</span>
-                <span>{engagement.metrics.reactions[reaction]}</span>
-              </Button>
-            );
-          })}
-        </div>
+        <ReactionPicker engagement={engagement} total={reactionTotal} />
       </div>
 
       <div aria-live="polite" className="mt-3 min-h-5 text-xs">
@@ -337,7 +458,7 @@ export function PromptEngagementBar({ slug }: { slug: string }) {
             >
               登录
             </Link>
-            后可以喜欢作品并选择品阶；浏览和复制始终无需登录。
+            后可以喜欢作品并添加回应；浏览和复制始终无需登录。
           </p>
         ) : engagement.error ? (
           <p className="text-destructive">{engagement.error}</p>

@@ -6,12 +6,12 @@ import {
   Copy,
   Database,
   Eye,
-  Flame,
   FolderTree,
   Heart,
   Images,
   ImageUp,
   MessageSquareText,
+  Sparkles,
   Users,
 } from "lucide-react";
 import type { Metadata, Route } from "next";
@@ -129,9 +129,9 @@ async function OverviewContent() {
       value: data.engagement.likes,
     },
     {
-      detail: "天地玄黄四阶反馈总数",
-      icon: Flame,
-      label: "品阶反馈",
+      detail: "用户对作品表达感受的回应总数",
+      icon: Sparkles,
+      label: "作品回应",
       value: data.engagement.reactions,
     },
   ];

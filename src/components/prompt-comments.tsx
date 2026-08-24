@@ -100,7 +100,7 @@ export function PromptComments({
           </p>
           <h2 className="mt-1 font-serif text-2xl text-foreground">实测心得</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            说说你在哪个平台尝试、哪里有效、哪里需要调整。评价只讨论实际使用，不替代天地玄黄品阶。
+            说说你在哪个平台尝试、哪里有效、哪里需要调整。评价记录实际使用，和快捷表情回应各有用途。
           </p>
         </div>
         <span className="text-sm tabular-nums text-muted-foreground">

@@ -117,7 +117,7 @@ async function AccountContent({ searchParams }: AuthPageProps) {
 
   return (
     <AuthShell
-      description="你的账户不会影响公开浏览；投稿、喜欢、品阶与实测心得归属于同一身份。"
+      description="你的账户不会影响公开浏览；投稿、喜欢、作品回应与实测心得归属于同一身份。"
       eyebrow="Account · 账户"
       message={message}
       title={profile?.display_name || "我的账户"}

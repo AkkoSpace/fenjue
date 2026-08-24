@@ -66,7 +66,7 @@ export function EditorialSelector({
           <div>
             <p className="text-sm font-medium text-foreground">司录精选</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              精选是平台编辑推荐，不会改变用户的天地玄黄反馈。
+              精选是平台编辑推荐，不会改变用户的作品回应。
             </p>
           </div>
           <Switch

@@ -1,6 +1,6 @@
 # 认证与邮件配置
 
-焚诀采用访客优先模型：公开浏览和复制提示词无需登录，喜欢与天地玄黄 Reaction 需要登录；Supabase Auth 负责邮箱密码账户、邮箱验证、密码重置和会话。SMTP 由 Supabase 调用，应用不依赖具体邮件服务商。
+焚诀采用访客优先模型：公开浏览和复制提示词无需登录，喜欢与表情 Reaction 需要登录；Supabase Auth 负责邮箱密码账户、邮箱验证、密码重置和会话。SMTP 由 Supabase 调用，应用不依赖具体邮件服务商。
 
 匿名浏览与复制会使用名为 `fj_visitor` 的 HttpOnly Cookie 做每日去重。该值不是登录凭据，浏览器脚本无法读取；服务端只向 Supabase 写入其 SHA-256 摘要，不保存原值、IP 或 User-Agent。完整统计口径见 [`ENGAGEMENT.md`](ENGAGEMENT.md)。
 

@@ -14,7 +14,7 @@
 - Supabase 是作品内容的唯一数据源；数据库为空时首页不展示作品
 - 首页通过编辑精选、可分享的分类与标签筛选发现作品；独立专栏页按主题组织作品；详情页提供提示词复制、分类标签、作者、来源和已验证工具，多图作品通过轮播完整查看
 - 首页采用服务端瀑布流分页：首张关键封面优先，其余图片原生懒加载；公开详情、单分类与单标签落地页进入 sitemap，组合筛选避免重复收录
-- 详情页提供真实的浏览、复制、喜欢与天地玄黄 Reaction：浏览和复制按访客、作品、UTC 日期去重，喜欢与品阶选择要求登录
+- 详情页提供真实的浏览、复制、喜欢与生图语义表情 Reaction：浏览和复制按访客、作品、UTC 日期去重，喜欢与表情回应要求登录
 - 登录用户可以在每条提示词下提交 10-500 字纯文字实测心得并标记使用平台；心得默认待审核，只有通过后才向访客公开
 
 ## 本地开发
@@ -30,7 +30,7 @@ npm run dev
 作品上传、R2 服务端凭据、CORS 和 Supabase 迁移见 [`docs/UPLOADS.md`](docs/UPLOADS.md)。
 管理员授权、用户角色、内容编辑、分类维护和 R2 删除边界见 [`docs/ADMIN.md`](docs/ADMIN.md)。
 精选、专栏和实测心得的内容语义、审核与公开边界见 [`docs/EDITORIAL.md`](docs/EDITORIAL.md)。
-作品浏览、复制、喜欢与天地玄黄 Reaction 的统计口径、权限和隐私边界见 [`docs/ENGAGEMENT.md`](docs/ENGAGEMENT.md)。
+作品浏览、复制、喜欢与表情 Reaction 的统计口径、权限和隐私边界见 [`docs/ENGAGEMENT.md`](docs/ENGAGEMENT.md)。
 统计明细的在线保留期、私有 R2 归档、定时任务和故障恢复见 [`docs/ANALYTICS_RETENTION.md`](docs/ANALYTICS_RETENTION.md)。
 可信数据集的幂等导入、R2 转存与异常记录边界见 [`docs/IMPORTS.md`](docs/IMPORTS.md)。
 

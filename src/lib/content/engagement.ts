@@ -9,27 +9,27 @@ export type PromptReactionLevel = (typeof PROMPT_REACTION_LEVELS)[number];
 
 export const PROMPT_REACTION_META: Record<
   PromptReactionLevel,
-  { description: string; label: string; shortLabel: string }
+  { description: string; emoji: string; label: string }
 > = {
   tian: {
-    description: "第一眼足够惊艳，很想收藏与复用",
-    label: "天阶",
-    shortLabel: "天",
+    description: "画面一下点燃灵感，值得马上收藏复用",
+    emoji: "🔥",
+    label: "灵感燃了",
   },
   di: {
-    description: "观感出众、完成度高，值得推荐",
-    label: "地阶",
-    shortLabel: "地",
+    description: "成片有意外惊喜，视觉表达很出彩",
+    emoji: "🪄",
+    label: "神来一笔",
   },
   xuan: {
-    description: "效果鲜明，让人产生尝试意愿",
-    label: "玄阶",
-    shortLabel: "玄",
+    description: "提示词勾起尝试欲，想复制后亲自生成",
+    emoji: "🧪",
+    label: "想炼同款",
   },
   huang: {
-    description: "效果成立，具有基础参考价值",
-    label: "黄阶",
-    shortLabel: "黄",
+    description: "提示词或技巧提供了可复用的新思路",
+    emoji: "💡",
+    label: "学到一招",
   },
 };
 
