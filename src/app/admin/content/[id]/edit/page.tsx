@@ -151,7 +151,6 @@ async function EditPromptContent({ params, searchParams }: EditPromptPageProps) 
               <p className="text-xs font-medium tracking-[0.18em] text-primary uppercase">
                 Review Desk · 审阅台
               </p>
-              <PromptReviewBadge status={prompt.reviewStatus} />
             </div>
             <h1 className="mt-2 text-balance font-serif text-2xl leading-tight text-foreground sm:text-3xl">
               {prompt.title}
