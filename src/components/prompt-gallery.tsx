@@ -8,16 +8,18 @@ interface PromptGalleryProps {
   coverOnly?: boolean;
   eager?: boolean;
   images: PromptImage[];
+  sizes?: string;
   title: string;
 }
 
 const CARD_IMAGE_SIZES =
-  "(max-width: 767px) calc(100vw - 40px), (max-width: 1439px) calc((100vw - 88px) / 2), (max-width: 1535px) 676px, 443px";
+  "(max-width: 767px) calc(100vw - 40px), (max-width: 1535px) calc((min(100vw - 64px, 1440px) - 24px) / 2), (max-width: 2047px) calc((min(100vw - 64px, 1440px) - 48px) / 3), 464px";
 
 export function PromptGallery({
   coverOnly = false,
   eager = false,
   images,
+  sizes = CARD_IMAGE_SIZES,
   title,
 }: PromptGalleryProps) {
   const coverImage = images[0];
@@ -55,7 +57,7 @@ export function PromptGallery({
             fill
             fetchPriority={eager ? "high" : "auto"}
             loading={eager ? "eager" : "lazy"}
-            sizes={CARD_IMAGE_SIZES}
+            sizes={sizes}
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.01] motion-reduce:transition-none"
           />
         </figure>

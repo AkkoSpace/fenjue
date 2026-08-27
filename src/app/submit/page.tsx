@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
+import { PageShell } from "@/components/layout/page-shell";
 import { PromptEditor } from "@/components/submission/prompt-editor";
 import { getActiveAiTools } from "@/lib/content/ai-tool-queries";
 import { getContentTaxonomy } from "@/lib/content/queries";
@@ -18,9 +19,9 @@ export default async function SubmitPage() {
   return (
     <Suspense
       fallback={
-        <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
+        <PageShell className="pb-20 pt-8 sm:pt-10">
           <div className="h-10 max-w-sm animate-pulse bg-muted" />
-        </main>
+        </PageShell>
       }
     >
       <SubmitContent />
@@ -53,7 +54,7 @@ async function SubmitContent() {
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
+    <PageShell className="pb-20 pt-8 sm:pt-10">
       <div className="max-w-2xl">
         <p className="mb-2 text-xs font-medium tracking-[0.2em] text-primary uppercase">
           Prompt Submission · 投稿
@@ -74,6 +75,6 @@ async function SubmitContent() {
         }
         tags={taxonomy.tags}
       />
-    </main>
+    </PageShell>
   );
 }

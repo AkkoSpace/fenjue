@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
+import { PageShell } from "@/components/layout/page-shell";
 import { PromptEntry } from "@/components/prompt-entry";
 import { getPublishedCollectionBySlug } from "@/lib/content/editorial-queries";
 import { absoluteUrl } from "@/lib/site";
@@ -58,7 +59,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   };
 
   return (
-    <main className="mx-auto w-full max-w-[90rem] px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
+    <PageShell className="pb-20 pt-8 sm:pt-10">
       <JsonLd data={structuredData} />
       <Link
         className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
@@ -94,6 +95,6 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
           <p className="mt-2 text-sm text-muted-foreground">作品审核通过后会按编排顺序出现。</p>
         </div>
       )}
-    </main>
+    </PageShell>
   );
 }

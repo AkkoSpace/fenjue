@@ -29,7 +29,7 @@ export function AdminNav() {
 
   return (
     <nav aria-label="后台管理" className="min-w-0">
-      <div className="flex gap-1 overflow-x-auto border-y border-border py-2 lg:sticky lg:top-6 lg:flex-col lg:overflow-visible lg:border-y-0 lg:py-0">
+      <div className="flex gap-1 overflow-x-auto border-y border-border py-2 lg:flex-col lg:overflow-visible lg:border-y-0 lg:py-0">
         {ITEMS.map((item) => {
           const active =
             item.href === "/admin"

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
+import { PageShell } from "@/components/layout/page-shell";
 import {
   PromptEditor,
   type PromptEditorInitialValue,
@@ -55,9 +56,9 @@ export default function EditSubmissionPage(props: EditSubmissionPageProps) {
   return (
     <Suspense
       fallback={
-        <main className="mx-auto w-full max-w-6xl px-5 pt-8 sm:px-8 sm:pt-10">
+        <PageShell className="pt-8 sm:pt-10">
           <div className="h-10 max-w-sm animate-pulse bg-muted motion-reduce:animate-none" />
-        </main>
+        </PageShell>
       }
     >
       <EditSubmissionContent {...props} />
@@ -142,7 +143,7 @@ async function EditSubmissionContent({ params }: EditSubmissionPageProps) {
   };
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
+    <PageShell className="pb-20 pt-8 sm:pt-10">
       <Link
         className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         href="/account"
@@ -187,6 +188,6 @@ async function EditSubmissionContent({ params }: EditSubmissionPageProps) {
         initialValue={initialValue}
         tags={taxonomy.tags}
       />
-    </main>
+    </PageShell>
   );
 }

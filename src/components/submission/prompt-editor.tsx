@@ -482,7 +482,7 @@ export function PromptEditor({
           </section>
         </div>
 
-        <section aria-labelledby="images-section" className="lg:sticky lg:top-6">
+        <section aria-labelledby="images-section" className="lg:sticky lg:top-24">
           <div className="mb-5 flex items-baseline justify-between gap-3 border-b border-border/80 pb-3">
             <div className="flex items-baseline gap-3">
               <span className="font-serif text-sm text-primary" aria-hidden="true">

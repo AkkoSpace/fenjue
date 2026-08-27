@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
 import { FeaturedPrompts } from "@/components/featured-prompts";
+import { PageShell } from "@/components/layout/page-shell";
 import { PromptEntry } from "@/components/prompt-entry";
 import { PromptFilters } from "@/components/prompt-filters";
 import { buttonVariants } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import {
 import { getFeaturedPrompts } from "@/lib/content/editorial-queries";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 import { cn } from "@/lib/utils";
+
+import styles from "./home.module.css";
 
 export const instant = false;
 
@@ -175,96 +178,108 @@ export default async function Home({ searchParams }: HomeProps) {
   };
 
   return (
-    <main className="mx-auto w-full max-w-[90rem] px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
+    <PageShell className="pb-20 pt-7 sm:pt-9" width="wide">
       <JsonLd data={itemList} />
-      <div className="mb-9 max-w-2xl sm:mb-11">
-        <p className="mb-2 text-xs font-medium tracking-[0.2em] text-primary uppercase">
-          Prompt Collection · 01
-        </p>
-        <h1 className="font-serif text-3xl leading-tight text-foreground sm:text-4xl">
-          {copy.heading}
-        </h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-          看见喜欢的画面，复制提示词，去你常用的 AI 工具里重新生成。
-        </p>
-      </div>
-
-      <FeaturedPrompts items={featured} />
-
-      <PromptFilters
-        activeCategory={data.activeCategory}
-        activeTag={data.activeTag}
-        categories={data.categories}
-        categoryAllCount={data.categoryAllCount}
-        filteredCount={data.filteredCount}
-        tagAllCount={data.tagAllCount}
-        tags={data.tags}
-      />
-
-      <section
-        aria-label={copy.heading}
-        className="columns-1 gap-6 md:columns-2 2xl:columns-3"
-      >
-        {data.entries.length ? (
-          data.entries.map((entry, index) => (
-            <PromptEntry
-              eager={index === 0}
-              key={entry.slug}
-              entry={entry}
-            />
-          ))
-        ) : (
-          <div className="break-inside-avoid border-y border-border py-16 text-center">
-            <h2 className="font-serif text-xl text-foreground">没有符合条件的作品</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              试试其他分类或标签，也可以清除当前筛选。
+      <div className={styles.shell}>
+        <header className={styles.intro}>
+          <p className="mb-2 text-xs font-medium tracking-[0.2em] text-primary uppercase">
+            Prompt Collection · 01
+          </p>
+          <h1 className="font-serif text-3xl leading-tight text-foreground sm:text-4xl">
+            {copy.heading}
+          </h1>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-border/80 pb-5">
+            <p className="max-w-lg text-sm leading-6 text-muted-foreground">
+              看见喜欢的画面，复制提示词，去你常用的 AI 工具里重新生成。
+            </p>
+            <p className="text-xs tabular-nums text-muted-foreground">
+              {data.filteredCount.toLocaleString("zh-CN")} 式
             </p>
           </div>
-        )}
-      </section>
+        </header>
 
-      {data.totalPages > 1 ? (
-        <nav
-          aria-label="作品分页"
-          className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-6 sm:mt-8"
-        >
-          {data.page > 1 ? (
-            <Link
-              className={cn(buttonVariants({ variant: "outline" }), "rounded-sm")}
-              href={pageHref(
-                data.page - 1,
-                data.activeCategory,
-                data.activeTag,
-              )}
-              rel="prev"
-            >
-              <ArrowLeft aria-hidden="true" />
-              上一页
-            </Link>
+        <PromptFilters
+          activeCategory={data.activeCategory}
+          activeTag={data.activeTag}
+          categories={data.categories}
+          categoryAllCount={data.categoryAllCount}
+          className={styles.filters}
+          filteredCount={data.filteredCount}
+          tagAllCount={data.tagAllCount}
+          tags={data.tags}
+        />
+
+        <FeaturedPrompts
+          className={styles.featured}
+          items={featured}
+          totalCount={data.categoryAllCount}
+        />
+
+        <section aria-label={copy.heading} className={styles.feed}>
+          {data.entries.length ? (
+            data.entries.map((entry, index) => (
+              <PromptEntry
+                eager={index === 0}
+                key={entry.slug}
+                entry={entry}
+              />
+            ))
           ) : (
-            <span />
+            <div className="border-y border-border py-16 text-center">
+              <h2 className="font-serif text-xl text-foreground">没有符合条件的作品</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                试试其他分类或标签，也可以清除当前筛选。
+              </p>
+            </div>
           )}
-          <span className="text-sm tabular-nums text-muted-foreground">
-            第 {data.page} / {data.totalPages} 页
-          </span>
-          {data.page < data.totalPages ? (
-            <Link
-              className={cn(buttonVariants({ variant: "outline" }), "rounded-sm")}
-              href={pageHref(
-                data.page + 1,
-                data.activeCategory,
-                data.activeTag,
-              )}
-              rel="next"
-            >
-              下一页
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          ) : (
-            <span />
-          )}
-        </nav>
-      ) : null}
-    </main>
+        </section>
+
+        {data.totalPages > 1 ? (
+          <nav
+            aria-label="作品分页"
+            className={cn(
+              styles.pagination,
+              "flex items-center justify-between gap-4 border-t border-border pt-6",
+            )}
+          >
+            {data.page > 1 ? (
+              <Link
+                className={cn(buttonVariants({ variant: "outline" }), "rounded-sm")}
+                href={pageHref(
+                  data.page - 1,
+                  data.activeCategory,
+                  data.activeTag,
+                )}
+                rel="prev"
+              >
+                <ArrowLeft aria-hidden="true" />
+                上一页
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span className="text-sm tabular-nums text-muted-foreground">
+              第 {data.page} / {data.totalPages} 页
+            </span>
+            {data.page < data.totalPages ? (
+              <Link
+                className={cn(buttonVariants({ variant: "outline" }), "rounded-sm")}
+                href={pageHref(
+                  data.page + 1,
+                  data.activeCategory,
+                  data.activeTag,
+                )}
+                rel="next"
+              >
+                下一页
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            ) : (
+              <span />
+            )}
+          </nav>
+        ) : null}
+      </div>
+    </PageShell>
   );
 }

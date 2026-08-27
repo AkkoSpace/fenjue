@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { JsonLd } from "@/components/json-ld";
+import { PageShell } from "@/components/layout/page-shell";
 import { getPublishedCollections } from "@/lib/content/editorial-queries";
 import { absoluteUrl } from "@/lib/site";
 
@@ -30,7 +31,7 @@ export default async function CollectionsPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
+    <PageShell className="pb-20 pt-8 sm:pt-10">
       <JsonLd data={structuredData} />
       <div className="max-w-3xl border-b border-border pb-7">
         <p className="text-xs tracking-[0.18em] text-primary uppercase">
@@ -45,10 +46,10 @@ export default async function CollectionsPage() {
       </div>
 
       {collections.length ? (
-        <section aria-label="已发布专栏" className="divide-y divide-border">
+        <section aria-label="已发布专栏" className="grid gap-x-12 xl:grid-cols-2">
           {collections.map((collection, index) => (
             <article
-              className="grid gap-5 py-7 md:grid-cols-[minmax(15rem,0.65fr)_minmax(0,1fr)] md:items-center md:gap-8"
+              className="grid gap-5 border-b border-border py-7 md:grid-cols-[minmax(15rem,0.72fr)_minmax(0,1fr)] md:items-center md:gap-8"
               key={collection.id}
             >
               <Link
@@ -100,6 +101,6 @@ export default async function CollectionsPage() {
           <p className="mt-2 text-sm text-muted-foreground">发布后会在这里形成完整目录。</p>
         </div>
       )}
-    </main>
+    </PageShell>
   );
 }

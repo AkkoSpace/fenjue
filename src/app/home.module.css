@@ -1,0 +1,61 @@
+.shell {
+  display: grid;
+  grid-template-areas:
+    "intro"
+    "filters"
+    "featured"
+    "feed"
+    "pagination";
+  grid-template-columns: minmax(0, 90rem);
+  justify-content: center;
+  row-gap: 2rem;
+}
+
+.intro {
+  grid-area: intro;
+}
+
+.filters {
+  grid-area: filters;
+  min-width: 0;
+}
+
+.featured {
+  grid-area: featured;
+  min-width: 0;
+}
+
+.feed {
+  column-count: 1;
+  column-gap: 1.5rem;
+  grid-area: feed;
+  min-width: 0;
+}
+
+.pagination {
+  grid-area: pagination;
+}
+
+@media (min-width: 48rem) {
+  .feed {
+    column-count: 2;
+  }
+}
+
+@media (min-width: 96rem) {
+  .feed {
+    column-count: 3;
+  }
+}
+
+@media (min-width: 128rem) {
+  .shell {
+    grid-template-areas:
+      "filters intro featured"
+      "filters feed featured"
+      "filters pagination featured";
+    grid-template-columns: 13.5rem minmax(0, 90rem) 15.5rem;
+    column-gap: 2rem;
+    row-gap: 2.75rem;
+  }
+}

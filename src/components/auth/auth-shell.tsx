@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { PageShell } from "@/components/layout/page-shell";
+import { cn } from "@/lib/utils";
+
 interface AuthShellProps {
   children: React.ReactNode;
   description: string;
@@ -9,6 +12,7 @@ interface AuthShellProps {
     text: string;
   };
   title: string;
+  variant?: "account" | "auth";
 }
 
 export function AuthShell({
@@ -17,11 +21,26 @@ export function AuthShell({
   eyebrow,
   message,
   title,
+  variant = "auth",
 }: AuthShellProps) {
+  const accountLayout = variant === "account";
+
   return (
-    <main className="mx-auto flex w-full max-w-[90rem] flex-1 px-5 py-10 sm:px-8 sm:py-14">
-      <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,0.72fr)_minmax(20rem,0.38fr)] lg:gap-20">
-        <div className="max-w-2xl border-t border-border/80 pt-5">
+    <PageShell className="flex flex-1 py-10 sm:py-14">
+      <div
+        className={cn(
+          "grid w-full gap-10 lg:gap-16 xl:gap-24",
+          accountLayout
+            ? "lg:grid-cols-[minmax(16rem,0.42fr)_minmax(0,0.92fr)]"
+            : "lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)]",
+        )}
+      >
+        <div
+          className={cn(
+            "max-w-2xl border-t border-border/80 pt-5",
+            accountLayout && "lg:sticky lg:top-24 lg:self-start",
+          )}
+        >
           <p className="text-xs font-medium tracking-[0.2em] text-primary uppercase">
             {eyebrow}
           </p>
@@ -57,17 +76,28 @@ export function AuthShell({
           {children}
         </section>
       </div>
-    </main>
+    </PageShell>
   );
 }
 
-export function AuthShellFallback() {
+export function AuthShellFallback({
+  variant = "auth",
+}: Readonly<{ variant?: "account" | "auth" }>) {
+  const accountLayout = variant === "account";
+
   return (
-    <main
-      className="mx-auto flex w-full max-w-[90rem] flex-1 px-5 py-10 sm:px-8 sm:py-14"
+    <PageShell
+      className="flex flex-1 py-10 sm:py-14"
       aria-label="正在载入账户页面"
     >
-      <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,0.72fr)_minmax(20rem,0.38fr)] lg:gap-20">
+      <div
+        className={cn(
+          "grid w-full gap-10 lg:gap-16 xl:gap-24",
+          accountLayout
+            ? "lg:grid-cols-[minmax(16rem,0.42fr)_minmax(0,0.92fr)]"
+            : "lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)]",
+        )}
+      >
         <div className="max-w-2xl border-t border-border/80 pt-5">
           <div className="h-3 w-28 animate-pulse bg-muted motion-reduce:animate-none" />
           <div className="mt-5 h-12 w-48 animate-pulse bg-muted motion-reduce:animate-none" />
@@ -79,6 +109,6 @@ export function AuthShellFallback() {
           <div className="h-11 animate-pulse bg-muted motion-reduce:animate-none" />
         </div>
       </div>
-    </main>
+    </PageShell>
   );
 }

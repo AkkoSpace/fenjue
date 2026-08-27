@@ -3,7 +3,7 @@ import { GitFork } from "lucide-react";
 export function SiteFooter() {
   return (
     <footer className="border-t border-border/70">
-      <div className="mx-auto flex min-h-14 w-full max-w-[90rem] items-center justify-between gap-4 px-5 text-xs text-muted-foreground sm:px-8">
+      <div className="mx-auto flex min-h-14 w-full max-w-[128rem] items-center justify-between gap-4 px-5 text-xs text-muted-foreground sm:px-8">
         <p className="min-w-0 truncate">
           <span className="font-serif text-foreground">焚诀</span>
           <span> · 以图为引，得其法。</span>

@@ -37,7 +37,7 @@ const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
 
 export default function AccountPage(props: AuthPageProps) {
   return (
-    <Suspense fallback={<AuthShellFallback />}>
+    <Suspense fallback={<AuthShellFallback variant="account" />}>
       <AccountContent {...props} />
     </Suspense>
   );
@@ -158,6 +158,7 @@ async function AccountContent({ searchParams }: AuthPageProps) {
       eyebrow="Account · 账户"
       message={message}
       title={profile?.display_name || "我的账户"}
+      variant="account"
     >
       <dl className="divide-y divide-border/80 border-y border-border/80 text-sm">
         <div className="grid gap-1 py-4 sm:grid-cols-[6rem_1fr] sm:gap-4">

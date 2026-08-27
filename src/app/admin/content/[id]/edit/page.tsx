@@ -175,7 +175,7 @@ async function EditPromptContent({ params, searchParams }: EditPromptPageProps) 
 
       <section
         aria-label="审核结论"
-        className="mt-5 border border-border bg-background shadow-[0_12px_32px_-28px_oklch(0.22_0.02_55/0.55)] xl:sticky xl:top-3 xl:z-20"
+        className="mt-5 border border-border bg-background shadow-[0_12px_32px_-28px_oklch(0.22_0.02_55/0.55)] xl:sticky xl:top-24 xl:z-20"
       >
         <form
           action={reviewPrompt}

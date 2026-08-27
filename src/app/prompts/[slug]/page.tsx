@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
 import { AiToolMark } from "@/components/ai-tool-mark";
+import { PageShell } from "@/components/layout/page-shell";
 import { PromptCopyButton } from "@/components/prompt-copy-button";
 import { PromptComments } from "@/components/prompt-comments";
 import {
@@ -24,6 +25,9 @@ import type { PromptEntryData } from "@/lib/content/types";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
 export const instant = false;
+
+const DETAIL_IMAGE_SIZES =
+  "(max-width: 767px) calc(100vw - 40px), (max-width: 1279px) calc(100vw - 64px), calc(min(100vw - 64px, 1440px) - 328px)";
 
 interface PromptPageProps {
   params: Promise<{ slug: string }>;
@@ -175,7 +179,7 @@ export default async function PromptPage({ params }: PromptPageProps) {
   ];
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-7 sm:px-8 sm:pt-9">
+    <PageShell className="pb-20 pt-7 sm:pt-9">
       <JsonLd data={structuredData} />
       <Link
         className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
@@ -202,18 +206,30 @@ export default async function PromptPage({ params }: PromptPageProps) {
             {entry.title}
           </h1>
 
-          {entry.isNsfw ? (
-            <SensitiveImageGuard title={entry.title}>
-              <PromptGallery images={entry.images} title={entry.title} />
-            </SensitiveImageGuard>
-          ) : (
-            <PromptGallery images={entry.images} title={entry.title} />
-          )}
+          <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_18rem] xl:gap-10">
+            <div className="min-w-0">
+              {entry.isNsfw ? (
+                <SensitiveImageGuard title={entry.title}>
+                  <PromptGallery
+                    images={entry.images}
+                    sizes={DETAIL_IMAGE_SIZES}
+                    title={entry.title}
+                  />
+                </SensitiveImageGuard>
+              ) : (
+                <PromptGallery
+                  images={entry.images}
+                  sizes={DETAIL_IMAGE_SIZES}
+                  title={entry.title}
+                />
+              )}
 
-          <PromptEngagementBar slug={entry.slug} />
+              <PromptEngagementBar slug={entry.slug} />
 
-          <div className="mt-7 grid gap-8 border-t border-border/80 pt-6 sm:mt-9 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.34fr)] lg:gap-12">
-            <section aria-labelledby="prompt-heading">
+              <section
+                aria-labelledby="prompt-heading"
+                className="mt-7 border-t border-border/80 pt-6 sm:mt-9 sm:pt-8"
+              >
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2
                   id="prompt-heading"
@@ -226,9 +242,10 @@ export default async function PromptPage({ params }: PromptPageProps) {
               <p className="whitespace-pre-wrap break-words text-[0.9375rem] leading-7 text-foreground/88 sm:text-base sm:leading-8">
                 {entry.prompt}
               </p>
-            </section>
+              </section>
+            </div>
 
-            <aside className="border-t border-border/80 pt-5 text-sm text-muted-foreground lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
+            <aside className="border-t border-border/80 pt-5 text-sm text-muted-foreground xl:sticky xl:top-24 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-7">
               <p className="mb-2 text-xs font-medium tracking-[0.18em] uppercase">
                 作者与来源
               </p>
@@ -311,16 +328,18 @@ export default async function PromptPage({ params }: PromptPageProps) {
             </aside>
           </div>
 
-          <PromptComments
-            aiTools={activeAiTools}
-            isAuthenticated={ownCommentState.isAuthenticated}
-            ownComments={ownCommentState.comments}
-            publishedComments={publishedComments}
-            publishedTotal={publishedCommentState.total}
-            slug={entry.slug}
-          />
+          <div className="xl:pr-[20.5rem]">
+            <PromptComments
+              aiTools={activeAiTools}
+              isAuthenticated={ownCommentState.isAuthenticated}
+              ownComments={ownCommentState.comments}
+              publishedComments={publishedComments}
+              publishedTotal={publishedCommentState.total}
+              slug={entry.slug}
+            />
+          </div>
         </article>
       </PromptEngagementProvider>
-    </main>
+    </PageShell>
   );
 }
