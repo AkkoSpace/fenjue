@@ -212,7 +212,6 @@ export default async function Home({ searchParams }: HomeProps) {
         <FeaturedPrompts
           className={styles.featured}
           items={featured}
-          totalCount={data.categoryAllCount}
         />
 
         <section aria-label={copy.heading} className={styles.feed}>

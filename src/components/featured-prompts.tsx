@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 interface FeaturedPromptsProps {
   className?: string;
   items: FeaturedPrompt[];
-  totalCount?: number;
 }
 
 const FEATURED_IMAGE_SIZES =
@@ -18,38 +17,9 @@ const FEATURED_IMAGE_SIZES =
 export function FeaturedPrompts({
   className,
   items,
-  totalCount = 0,
 }: FeaturedPromptsProps) {
   if (!items.length) {
-    return (
-      <aside
-        aria-label="焚诀浏览说明"
-        className={cn(
-          "hidden min-[128rem]:sticky min-[128rem]:top-24 min-[128rem]:block",
-          className,
-        )}
-      >
-        <section className="border border-border/80 p-5">
-          <p className="text-[0.68rem] font-medium tracking-[0.18em] text-primary uppercase">
-            Current Volume · 当期
-          </p>
-          <h2 className="mt-3 font-serif text-xl text-foreground">卷一 · 文生图</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            当前公开收录 {totalCount.toLocaleString("zh-CN")} 式，持续补充经过整理的成图与提示词。
-          </p>
-        </section>
-        <section className="mt-5 border border-border/80 p-5">
-          <p className="text-[0.68rem] font-medium tracking-[0.18em] text-primary uppercase">
-            How to Use · 取法
-          </p>
-          <ol className="mt-3 grid gap-3 text-sm text-muted-foreground">
-            <li className="flex gap-3"><span className="font-serif text-primary">壹</span><span>先看画面，找到想要的效果。</span></li>
-            <li className="flex gap-3"><span className="font-serif text-primary">贰</span><span>进入详情，核对图片和提示词。</span></li>
-            <li className="flex gap-3"><span className="font-serif text-primary">叁</span><span>复制后，去常用模型生成。</span></li>
-          </ol>
-        </section>
-      </aside>
-    );
+    return null;
   }
 
   return (
