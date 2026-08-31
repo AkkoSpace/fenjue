@@ -13,6 +13,13 @@ interface BrandMarkProps {
   logoUrl?: string | null;
 }
 
+const DEFAULT_BRAND_ASSET_URLS: Record<string, string> = {
+  // This is the official Xiaoheihe favicon, mirrored to our own R2 so the
+  // public site does not depend on the source platform at render time.
+  xiaoheihe:
+    "https://fenjue-images.akko.space/catalog/icons/platforms/xiaoheihe.ico",
+};
+
 export function BrandMark({
   brandKey,
   brandColor,
@@ -25,7 +32,9 @@ export function BrandMark({
   const color = /^#[0-9a-f]{6}$/i.test(brandColor ?? "")
     ? brandColor
     : undefined;
-  const hasLogo = Boolean(logoUrl) && !failed;
+  const defaultLogoUrl = brandKey ? DEFAULT_BRAND_ASSET_URLS[brandKey] : undefined;
+  const resolvedLogoUrl = logoUrl ?? defaultLogoUrl;
+  const hasLogo = Boolean(resolvedLogoUrl) && !failed;
   const hasFallbackIcon = hasBrandIcon(brandKey, name);
   const usesColorFallback = !hasLogo && !hasFallbackIcon && color;
 
@@ -50,7 +59,7 @@ export function BrandMark({
           loading="eager"
           onError={() => setFailed(true)}
           referrerPolicy="no-referrer"
-          src={logoUrl!}
+          src={resolvedLogoUrl!}
         />
       ) : hasFallbackIcon ? (
         <BrandIcon

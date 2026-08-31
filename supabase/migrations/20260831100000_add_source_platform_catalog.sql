@@ -111,6 +111,11 @@ values
   ('douyin', '抖音', '#111111', 6)
 on conflict (key) do nothing;
 
+update public.source_platforms
+set logo_url = 'https://fenjue-images.akko.space/catalog/icons/platforms/xiaoheihe.ico'
+where key = 'xiaoheihe'
+  and logo_url is null;
+
 alter table public.prompts
   add column if not exists source_platform_key text
     references public.source_platforms(key) on delete set null;
