@@ -14,10 +14,32 @@ interface BrandMarkProps {
 }
 
 const DEFAULT_BRAND_ASSET_URLS: Record<string, string> = {
-  // This is the official Xiaoheihe favicon, mirrored to our own R2 so the
-  // public site does not depend on the source platform at render time.
+  // Official platform favicons mirrored to our own R2 so the public site does
+  // not depend on third-party hosts at render time.
+  bilibili:
+    "https://fenjue-images.akko.space/catalog/icons/platforms/bilibili.ico",
   xiaoheihe:
     "https://fenjue-images.akko.space/catalog/icons/platforms/xiaoheihe.ico",
+  xiaohongshu:
+    "https://fenjue-images.akko.space/catalog/icons/platforms/xiaohongshu.ico",
+  github:
+    "https://fenjue-images.akko.space/catalog/icons/platforms/github.ico",
+  youtube:
+    "https://fenjue-images.akko.space/catalog/icons/platforms/youtube.ico",
+  douyin:
+    "https://fenjue-images.akko.space/catalog/icons/platforms/douyin.ico",
+
+  // Official model/provider marks. Nano Banana uses Google's official Gemini
+  // mark, while Grok uses xAI's official mark; both are the products' own
+  // published brand assets rather than hand-drawn fallbacks.
+  "nano-banana":
+    "https://fenjue-images.akko.space/catalog/icons/models/nano-banana.svg",
+  doubao:
+    "https://fenjue-images.akko.space/catalog/icons/models/doubao.png",
+  grok:
+    "https://fenjue-images.akko.space/catalog/icons/models/grok.ico",
+  chatgpt:
+    "https://fenjue-images.akko.space/catalog/icons/models/chatgpt.webp",
 };
 
 export function BrandMark({

@@ -20,6 +20,18 @@ set brand_color = case key
 end
 where brand_color is null;
 
+-- 使用官方品牌资源的镜像地址作为默认图标；后台手动配置过的地址不覆盖。
+update public.ai_tools
+set logo_url = case key
+  when 'nano-banana' then 'https://fenjue-images.akko.space/catalog/icons/models/nano-banana.svg'
+  when 'doubao' then 'https://fenjue-images.akko.space/catalog/icons/models/doubao.png'
+  when 'grok' then 'https://fenjue-images.akko.space/catalog/icons/models/grok.ico'
+  when 'chatgpt' then 'https://fenjue-images.akko.space/catalog/icons/models/chatgpt.webp'
+  else logo_url
+end
+where logo_url is null
+  and key in ('nano-banana', 'doubao', 'grok', 'chatgpt');
+
 drop function if exists public.admin_get_ai_tools();
 create function public.admin_get_ai_tools()
 returns table (
@@ -112,9 +124,17 @@ values
 on conflict (key) do nothing;
 
 update public.source_platforms
-set logo_url = 'https://fenjue-images.akko.space/catalog/icons/platforms/xiaoheihe.ico'
-where key = 'xiaoheihe'
-  and logo_url is null;
+set logo_url = case key
+  when 'bilibili' then 'https://fenjue-images.akko.space/catalog/icons/platforms/bilibili.ico'
+  when 'xiaoheihe' then 'https://fenjue-images.akko.space/catalog/icons/platforms/xiaoheihe.ico'
+  when 'xiaohongshu' then 'https://fenjue-images.akko.space/catalog/icons/platforms/xiaohongshu.ico'
+  when 'github' then 'https://fenjue-images.akko.space/catalog/icons/platforms/github.ico'
+  when 'youtube' then 'https://fenjue-images.akko.space/catalog/icons/platforms/youtube.ico'
+  when 'douyin' then 'https://fenjue-images.akko.space/catalog/icons/platforms/douyin.ico'
+  else logo_url
+end
+where logo_url is null
+  and key in ('bilibili', 'xiaoheihe', 'xiaohongshu', 'github', 'youtube', 'douyin');
 
 alter table public.prompts
   add column if not exists source_platform_key text
