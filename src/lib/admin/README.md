@@ -14,6 +14,7 @@
 - `user-actions.ts`：调整普通用户与普通管理员角色，仅允许唯一超级管理员调用。
 - `taxonomy-actions.ts`：创建、编辑和停用受控分类与标签。
 - `ai-tool-queries.ts` / `ai-tool-actions.ts`：读取模型引用统计，创建、编辑、停用或安全删除生成模型。
+- `source-platform-queries.ts` / `source-platform-actions.ts`：维护提示词来源平台的名称、Logo、品牌色、官网、排序与启停。
 - `editorial-queries.ts` / `editorial-actions.ts`：查询、创建、编辑和发布专栏。
 - `comment-queries.ts` / `comment-actions.ts`：分页读取实测心得并执行通过或驳回。
 - `action-utils.ts`：统一约束后台返回地址、消息参数和基础输入。
@@ -26,7 +27,7 @@
 - 依赖 `src/lib/auth/authorization.ts` 完成服务端管理员鉴权。
 - 依赖 Supabase RLS 作为数据权限的最终边界。
 - 单图移除和永久删除依赖 `src/lib/r2/server.ts` 清理图片对象。
-- `/admin`、`/admin/content`、`/admin/comments`、`/admin/collections`、`/admin/users`、`/admin/taxonomy`、`/admin/models` 页面和后台组件调用本模块。
+- `/admin`、`/admin/content`、`/admin/comments`、`/admin/collections`、`/admin/users`、`/admin/taxonomy`、`/admin/models`、`/admin/platforms` 页面和后台组件调用本模块。
 
 ## 使用方式
 

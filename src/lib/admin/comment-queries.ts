@@ -49,7 +49,7 @@ export async function getAdminPromptComments(raw: {
   let query = supabase
     .from("prompt_comments")
     .select(
-      "id,author_name,body,tool:ai_tools!prompt_comments_tool_key_fkey(key,name,description,logo_url,website_url,active,sort_order),review_status,review_note,created_at,prompt:prompts!inner(slug,title)",
+      "id,author_name,body,tool:ai_tools!prompt_comments_tool_key_fkey(key,name,description,logo_url,brand_color,website_url,active,sort_order),review_status,review_note,created_at,prompt:prompts!inner(slug,title)",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })

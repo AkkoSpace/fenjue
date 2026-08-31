@@ -13,6 +13,11 @@ import { getActiveAiTools } from "@/lib/content/ai-tool-queries";
 import { aiToolFromRelation, type AiToolRow } from "@/lib/content/ai-tools";
 import { isContentRelation } from "@/lib/content/relation";
 import { getContentTaxonomy } from "@/lib/content/queries";
+import { getActiveSourcePlatforms } from "@/lib/content/source-platform-queries";
+import {
+  sourcePlatformFromRelation,
+  type SourcePlatformRow,
+} from "@/lib/content/source-platforms";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,6 +51,7 @@ interface EditablePromptRow {
     width: number;
   }[];
   prompt_tags: { tag_key: string }[];
+  source_platform: SourcePlatformRow | SourcePlatformRow[] | null;
   review_note: string | null;
   review_status: "approved" | "pending" | "rejected";
   source_url: string;
@@ -80,17 +86,18 @@ async function EditSubmissionContent({ params }: EditSubmissionPageProps) {
     redirect(`/login?next=${encodeURIComponent(`/account/submissions/${id}/edit`)}`);
   }
 
-  const [promptResult, taxonomy, activeTools] = await Promise.all([
+  const [promptResult, taxonomy, activeTools, activeSourcePlatforms] = await Promise.all([
     supabase
       .from("prompts")
       .select(
-        "id,title,prompt,author_name,author_url,source_url,is_nsfw,content_relation,category_key,review_status,review_note,prompt_images(id,position,object_key,alt,width,height),prompt_tags(tag_key),prompt_ai_tools(tool:ai_tools!prompt_ai_tools_tool_key_fkey(key,name,description,logo_url,website_url,active,sort_order))",
+        "id,title,prompt,author_name,author_url,source_url,source_platform:source_platforms!prompts_source_platform_key_fkey(key,name,logo_url,brand_color,website_url,active,sort_order),is_nsfw,content_relation,category_key,review_status,review_note,prompt_images(id,position,object_key,alt,width,height),prompt_tags(tag_key),prompt_ai_tools(tool:ai_tools!prompt_ai_tools_tool_key_fkey(key,name,description,logo_url,brand_color,website_url,active,sort_order))",
       )
       .eq("id", id)
       .eq("user_id", user.id)
       .maybeSingle(),
     getContentTaxonomy(),
     getActiveAiTools(),
+    getActiveSourcePlatforms(),
   ]);
 
   if (promptResult.error) {
@@ -115,6 +122,13 @@ async function EditSubmissionContent({ params }: EditSubmissionPageProps) {
     .filter((tool) => tool !== null);
   const toolMap = new Map(activeTools.map((tool) => [tool.key, tool]));
   historicalTools.forEach((tool) => toolMap.set(tool.key, tool));
+  const historicalSourcePlatform = sourcePlatformFromRelation(prompt.source_platform);
+  const sourcePlatformMap = new Map(
+    activeSourcePlatforms.map((platform) => [platform.key, platform]),
+  );
+  if (historicalSourcePlatform) {
+    sourcePlatformMap.set(historicalSourcePlatform.key, historicalSourcePlatform);
+  }
   const r2BaseUrl = process.env.R2_PUBLIC_BASE_URL?.replace(/\/$/, "");
   if (!r2BaseUrl) throw new Error("图片公开地址尚未配置。");
 
@@ -137,6 +151,7 @@ async function EditSubmissionContent({ params }: EditSubmissionPageProps) {
     isNsfw: prompt.is_nsfw,
     prompt: prompt.prompt,
     sourceUrl: prompt.source_url,
+    sourcePlatformKey: historicalSourcePlatform?.key ?? null,
     tagKeys: prompt.prompt_tags.map((tag) => tag.tag_key),
     title: prompt.title,
     verifiedTools: historicalTools.map((tool) => tool.key),
@@ -186,6 +201,9 @@ async function EditSubmissionContent({ params }: EditSubmissionPageProps) {
         categories={taxonomy.categories}
         defaultAuthorName={prompt.author_name}
         initialValue={initialValue}
+        sourcePlatforms={[...sourcePlatformMap.values()].sort(
+          (left, right) => left.sortOrder - right.sortOrder,
+        )}
         tags={taxonomy.tags}
       />
     </PageShell>

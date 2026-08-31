@@ -4,6 +4,7 @@ export type AiToolKey = string;
 
 export interface AiTool {
   active: boolean;
+  brandColor: string | null;
   description: string;
   key: AiToolKey;
   logoUrl: string | null;
@@ -14,6 +15,7 @@ export interface AiTool {
 
 export interface AiToolRow {
   active: boolean;
+  brand_color: string | null;
   description: string;
   key: string;
   logo_url: string | null;
@@ -41,6 +43,7 @@ export function normalizeAiToolKeys(value: unknown): AiToolKey[] {
 export function aiToolFromRow(row: AiToolRow): AiTool {
   return {
     active: row.active,
+    brandColor: row.brand_color,
     description: row.description,
     key: row.key,
     logoUrl: row.logo_url,

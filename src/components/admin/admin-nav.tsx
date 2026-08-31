@@ -5,6 +5,7 @@ import {
   Bot,
   FolderTree,
   Gauge,
+  Globe2,
   Images,
   MessageSquareText,
   Users,
@@ -22,6 +23,7 @@ const ITEMS = [
   { href: "/admin/users", icon: Users, label: "用户管理", mobileLabel: "用户" },
   { href: "/admin/taxonomy", icon: FolderTree, label: "分类管理", mobileLabel: "分类" },
   { href: "/admin/models", icon: Bot, label: "模型管理", mobileLabel: "模型" },
+  { href: "/admin/platforms", icon: Globe2, label: "来源平台", mobileLabel: "来源" },
 ] as const;
 
 export function AdminNav() {

@@ -16,6 +16,10 @@ import {
   type ContentRelation,
 } from "@/lib/content/relation";
 import {
+  isSourcePlatformKey,
+  type SourcePlatformKey,
+} from "@/lib/content/source-platforms";
+import {
   isPromptReviewStatus,
   PROMPT_REVIEW_STATUS_META,
 } from "@/lib/content/review";
@@ -199,6 +203,7 @@ export interface UpdateAdminPromptInput {
   featureRecommendation: string;
   prompt: string;
   sourceUrl: string;
+  sourcePlatformKey: SourcePlatformKey | null;
   tagKeys: string[];
   title: string;
   verifiedTools: AiToolKey[];
@@ -239,6 +244,12 @@ function validatePromptEdit(
     return "作者链接和来源链接都需要是有效的 HTTP 地址。";
   }
   if (!isContentRelation(input.contentRelation)) return "内容关系无效。";
+  if (
+    input.sourcePlatformKey !== null &&
+    !isSourcePlatformKey(input.sourcePlatformKey)
+  ) {
+    return "来源平台信息无效。";
+  }
   if (
     input.featured &&
     (input.featureRecommendation.length < 2 ||
@@ -343,6 +354,9 @@ export async function updateAdminPrompt(
     featureRecommendation: cleanAdminInput(rawInput?.featureRecommendation),
     prompt: cleanAdminInput(rawInput?.prompt),
     sourceUrl: cleanAdminInput(rawInput?.sourceUrl),
+    sourcePlatformKey: rawInput?.sourcePlatformKey == null
+      ? null
+      : cleanAdminInput(rawInput?.sourcePlatformKey),
     tagKeys: Array.isArray(rawInput?.tagKeys) ? rawInput.tagKeys : [],
     title: cleanAdminInput(rawInput?.title),
     verifiedTools: Array.isArray(rawInput?.verifiedTools)
@@ -396,6 +410,7 @@ export async function updateAdminPrompt(
     p_is_nsfw: input.isNsfw,
     p_prompt: input.prompt,
     p_source_url: input.sourceUrl,
+    p_source_platform_key: input.sourcePlatformKey,
     p_tag_keys: normalizeTaxonomyKeys(input.tagKeys),
     p_title: input.title,
     p_tool_keys: normalizeAiToolKeys(input.verifiedTools),

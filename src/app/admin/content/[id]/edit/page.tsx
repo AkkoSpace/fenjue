@@ -20,6 +20,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { reviewPrompt } from "@/lib/admin/actions";
 import { getAdminAiTools } from "@/lib/admin/ai-tool-queries";
+import { getAdminSourcePlatforms } from "@/lib/admin/source-platform-queries";
 import { getAdminCollections } from "@/lib/admin/editorial-queries";
 import {
   type AdminPromptSearchParams,
@@ -82,11 +83,12 @@ export default function EditPromptPage(props: EditPromptPageProps) {
 
 async function EditPromptContent({ params, searchParams }: EditPromptPageProps) {
   const { id } = await params;
-  const [prompt, taxonomy, collections, modelDirectory, rawMessages] = await Promise.all([
+  const [prompt, taxonomy, collections, modelDirectory, sourcePlatforms, rawMessages] = await Promise.all([
     getAdminPrompt(id),
     getContentTaxonomy(),
     getAdminCollections(),
     getAdminAiTools(),
+    getAdminSourcePlatforms(),
     searchParams,
   ]);
   if (!prompt) notFound();
@@ -258,7 +260,7 @@ async function EditPromptContent({ params, searchParams }: EditPromptPageProps) 
           </div>
         </form>
       </section>
-      <AdminPromptEditor aiTools={modelDirectory.items} categories={taxonomy.categories} collections={collections} initial={prompt} key={`${prompt.title}:${prompt.images.map((image) => image.id).join(":")}`} tags={taxonomy.tags} />
+      <AdminPromptEditor aiTools={modelDirectory.items} categories={taxonomy.categories} collections={collections} initial={prompt} key={`${prompt.title}:${prompt.images.map((image) => image.id).join(":")}`} sourcePlatforms={sourcePlatforms.items} tags={taxonomy.tags} />
 
       {prompt.reviewHistory.length ? (
         <details className="group mt-10 border-y border-border">

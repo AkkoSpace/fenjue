@@ -1,4 +1,5 @@
 import type { AiTool } from "@/lib/content/ai-tools";
+import type { SourcePlatform } from "@/lib/content/source-platforms";
 import type { ContentRelation } from "@/lib/content/relation";
 import type { PromptEngagementMetrics } from "@/lib/content/engagement";
 import type {
@@ -36,6 +37,7 @@ export interface PromptEntryData {
   prompt: string;
   slug: string;
   sourceUrl: string;
+  sourcePlatform: SourcePlatform | null;
   tags: TaxonomyTag[];
   title: string;
   verifiedTools: AiTool[];

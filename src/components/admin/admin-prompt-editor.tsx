@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { ContentRelationSelector } from "@/components/submission/content-relation-selector";
+import { SourcePlatformSelector } from "@/components/submission/source-platform-selector";
 import { EditorialSelector } from "@/components/admin/editorial-selector";
 import { TaxonomySelector } from "@/components/submission/taxonomy-selector";
 import { VerifiedToolsSelector } from "@/components/submission/verified-tools-selector";
@@ -31,6 +32,10 @@ import {
 import type { AdminCollection } from "@/lib/admin/editorial-queries";
 import type { AdminPromptDetail } from "@/lib/admin/queries";
 import type { AiTool, AiToolKey } from "@/lib/content/ai-tools";
+import type {
+  SourcePlatform,
+  SourcePlatformKey,
+} from "@/lib/content/source-platforms";
 import {
   getContentRelationOption,
   type ContentRelation,
@@ -47,6 +52,7 @@ interface AdminPromptEditorProps {
   categories: TaxonomyCategory[];
   collections: AdminCollection[];
   initial: AdminPromptDetail;
+  sourcePlatforms: SourcePlatform[];
   tags: TaxonomyTag[];
 }
 
@@ -105,6 +111,7 @@ export function AdminPromptEditor({
   categories,
   collections,
   initial,
+  sourcePlatforms,
   tags,
 }: AdminPromptEditorProps) {
   const router = useRouter();
@@ -114,6 +121,9 @@ export function AdminPromptEditor({
   const [authorName, setAuthorName] = useState(initial.authorName);
   const [authorUrl, setAuthorUrl] = useState(initial.authorUrl);
   const [sourceUrl, setSourceUrl] = useState(initial.sourceUrl);
+  const [sourcePlatformKey, setSourcePlatformKey] = useState<SourcePlatformKey | null>(
+    initial.sourcePlatform?.key ?? null,
+  );
   const [categoryKey, setCategoryKey] = useState(initial.category.key);
   const [contentRelation, setContentRelation] =
     useState<ContentRelation>(initial.contentRelation);
@@ -306,6 +316,7 @@ export function AdminPromptEditor({
         isNsfw,
         prompt,
         sourceUrl,
+        sourcePlatformKey,
         tagKeys,
         title,
         verifiedTools,
@@ -396,7 +407,7 @@ export function AdminPromptEditor({
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium text-foreground">作者、来源与模型</span>
                 <span className="mt-1 block truncate text-xs text-muted-foreground">
-                  {authorName} · {relationName} · {selectedToolNames.length ? selectedToolNames.join(" / ") : "未标记模型"}
+                  {authorName} · {relationName} · {sourcePlatformKey ? "已标注来源平台" : "未标注来源平台"} · {selectedToolNames.length ? selectedToolNames.join(" / ") : "未标记模型"}
                 </span>
               </span>
               <span className="text-xs text-muted-foreground group-open:hidden">核对</span>
@@ -417,6 +428,7 @@ export function AdminPromptEditor({
                 <Input id="admin-source-url" onChange={(event) => setSourceUrl(event.target.value)} required type="url" value={sourceUrl} />
               </div>
               <ContentRelationSelector disabled={isSaving} onChange={setContentRelation} value={contentRelation} />
+              <SourcePlatformSelector disabled={isSaving} onChange={setSourcePlatformKey} platforms={sourcePlatforms} value={sourcePlatformKey} />
               <VerifiedToolsSelector disabled={isSaving} onChange={setVerifiedTools} tools={aiTools} value={verifiedTools} />
             </div>
           </details>

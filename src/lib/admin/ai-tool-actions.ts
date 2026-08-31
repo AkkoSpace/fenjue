@@ -26,11 +26,16 @@ function optionalHttpsUrl(value: string) {
   }
 }
 
+function optionalBrandColor(value: string) {
+  return !value || /^#[0-9a-f]{6}$/i.test(value);
+}
+
 export async function saveAiTool(formData: FormData) {
   const intent = cleanAdminInput(formData.get("intent"));
   const key = cleanAdminInput(formData.get("key"));
   const name = cleanAdminInput(formData.get("name"));
   const description = cleanAdminInput(formData.get("description"));
+  const brandColor = cleanAdminInput(formData.get("brandColor"));
   const logoUrl = cleanAdminInput(formData.get("logoUrl"));
   const websiteUrl = cleanAdminInput(formData.get("websiteUrl"));
   const active = formData
@@ -49,6 +54,7 @@ export async function saveAiTool(formData: FormData) {
     description.length > 160 ||
     !optionalHttpsUrl(logoUrl) ||
     !optionalHttpsUrl(websiteUrl) ||
+    !optionalBrandColor(brandColor) ||
     !Number.isSafeInteger(sortOrder) ||
     sortOrder < 1 ||
     sortOrder > 32767
@@ -64,6 +70,7 @@ export async function saveAiTool(formData: FormData) {
   const { supabase } = await requireAdmin(RETURN_TO as Route);
   const values = {
     active,
+    brand_color: brandColor || null,
     description,
     key,
     logo_url: logoUrl || null,

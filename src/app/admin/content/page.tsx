@@ -13,11 +13,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { AiToolMark } from "@/components/ai-tool-mark";
 import { AdminNotice, firstMessage } from "@/components/admin/admin-notice";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DeletePromptForm } from "@/components/admin/delete-prompt-form";
 import { PromptReviewBadge } from "@/components/prompt-review-badge";
 import { SensitiveImageGuard } from "@/components/sensitive-image-guard";
+import { SourcePlatformMark } from "@/components/source-platform-mark";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -295,12 +297,32 @@ async function Content({ searchParams }: ContentPageProps) {
                 <div className="min-w-0 self-center">
                   <h3 className="truncate text-sm font-medium text-foreground sm:text-base">{prompt.title}</h3>
                   <p className="mt-1 truncate text-sm text-muted-foreground">{prompt.authorName}</p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground/80">
-                    {prompt.slug} · {getContentRelationOption(prompt.contentRelation).label} · {prompt.category.name}
-                    {prompt.tags.length ? ` · ${prompt.tags.map((tag) => `#${tag.name}`).join(" ")}` : ""}
-                    {prompt.verifiedTools.length ? ` · ${prompt.verifiedTools.map((tool) => tool.name).join(" / ")}` : ""}
-                    {prompt.isNsfw ? " · NSFW" : ""}
-                  </p>
+                  <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/80">
+                    <span className="truncate">{prompt.slug}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{getContentRelationOption(prompt.contentRelation).label}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{prompt.category.name}</span>
+                    {prompt.sourcePlatform ? (
+                      <span className="inline-flex min-w-0 items-center gap-1.5 border border-border/80 bg-background px-1.5 py-0.5 text-foreground">
+                        <SourcePlatformMark className="size-4 border-0" platform={prompt.sourcePlatform} />
+                        <span className="max-w-32 truncate">{prompt.sourcePlatform.name}</span>
+                      </span>
+                    ) : null}
+                    {prompt.tags.length ? <span>· {prompt.tags.map((tag) => `#${tag.name}`).join(" ")}</span> : null}
+                    {prompt.verifiedTools.length ? (
+                      <span className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
+                        <span aria-hidden="true">·</span>
+                        {prompt.verifiedTools.map((tool) => (
+                          <span className="inline-flex min-w-0 items-center gap-1 border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-foreground" key={tool.key}>
+                            <AiToolMark className="size-4 border-0 bg-transparent" tool={tool} />
+                            <span className="max-w-24 truncate">{tool.name}</span>
+                          </span>
+                        ))}
+                      </span>
+                    ) : null}
+                    {prompt.isNsfw ? <span>· NSFW</span> : null}
+                  </div>
                   {prompt.importStatus === "needs_review" || prompt.importStatus === "missing_media" ? (
                     <p className="mt-2 text-xs text-destructive">
                       {prompt.importStatus === "missing_media" ? "缺少图片" : "导入资料需要人工复核"}

@@ -6,6 +6,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { PromptEditor } from "@/components/submission/prompt-editor";
 import { getActiveAiTools } from "@/lib/content/ai-tool-queries";
 import { getContentTaxonomy } from "@/lib/content/queries";
+import { getActiveSourcePlatforms } from "@/lib/content/source-platform-queries";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -43,7 +44,7 @@ async function SubmitContent() {
     redirect("/login?next=/submit");
   }
 
-  const [{ data: profile }, taxonomy, aiTools] = await Promise.all([
+  const [{ data: profile }, taxonomy, aiTools, sourcePlatforms] = await Promise.all([
     supabase
       .from("profiles")
       .select("display_name")
@@ -51,6 +52,7 @@ async function SubmitContent() {
       .maybeSingle(),
     getContentTaxonomy(),
     getActiveAiTools(),
+    getActiveSourcePlatforms(),
   ]);
 
   return (
@@ -73,6 +75,7 @@ async function SubmitContent() {
         defaultAuthorName={
           profile?.display_name || user.user_metadata?.display_name || ""
         }
+        sourcePlatforms={sourcePlatforms}
         tags={taxonomy.tags}
       />
     </PageShell>

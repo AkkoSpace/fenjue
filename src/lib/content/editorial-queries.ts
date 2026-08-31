@@ -253,7 +253,7 @@ export async function getPublishedPromptComments(
   const { count, data, error } = await anonymousClient()
     .from("prompt_comments")
     .select(
-      "id,author_name,body,tool:ai_tools!prompt_comments_tool_key_fkey(key,name,description,logo_url,website_url,active,sort_order),review_status,review_note,created_at,prompt:prompts!inner(slug)",
+      "id,author_name,body,tool:ai_tools!prompt_comments_tool_key_fkey(key,name,description,logo_url,brand_color,website_url,active,sort_order),review_status,review_note,created_at,prompt:prompts!inner(slug)",
       { count: "exact" },
     )
     .eq("prompt.slug", slug)
@@ -287,7 +287,7 @@ export async function getOwnPromptComments(
   const { data, error } = await supabase
     .from("prompt_comments")
     .select(
-      "id,author_name,body,tool:ai_tools!prompt_comments_tool_key_fkey(key,name,description,logo_url,website_url,active,sort_order),review_status,review_note,created_at,prompt:prompts!inner(slug)",
+      "id,author_name,body,tool:ai_tools!prompt_comments_tool_key_fkey(key,name,description,logo_url,brand_color,website_url,active,sort_order),review_status,review_note,created_at,prompt:prompts!inner(slug)",
     )
     .eq("user_id", user.id)
     .eq("prompt.slug", slug)

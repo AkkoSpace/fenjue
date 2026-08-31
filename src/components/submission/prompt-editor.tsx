@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { ContentRelationSelector } from "@/components/submission/content-relation-selector";
+import { SourcePlatformSelector } from "@/components/submission/source-platform-selector";
 import { TaxonomySelector } from "@/components/submission/taxonomy-selector";
 import { VerifiedToolsSelector } from "@/components/submission/verified-tools-selector";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,10 @@ import {
   updateOwnPrompt,
 } from "@/lib/content/actions";
 import type { AiTool, AiToolKey } from "@/lib/content/ai-tools";
+import type {
+  SourcePlatform,
+  SourcePlatformKey,
+} from "@/lib/content/source-platforms";
 import type { ContentRelation } from "@/lib/content/relation";
 import type {
   TaxonomyCategory,
@@ -41,6 +46,7 @@ interface PromptEditorProps {
   categories: TaxonomyCategory[];
   defaultAuthorName: string;
   initialValue?: PromptEditorInitialValue;
+  sourcePlatforms: SourcePlatform[];
   tags: TaxonomyTag[];
 }
 
@@ -61,6 +67,7 @@ export interface PromptEditorInitialValue {
   isNsfw: boolean;
   prompt: string;
   sourceUrl: string;
+  sourcePlatformKey: SourcePlatformKey | null;
   tagKeys: string[];
   title: string;
   verifiedTools: AiToolKey[];
@@ -117,6 +124,7 @@ export function PromptEditor({
   categories,
   defaultAuthorName,
   initialValue,
+  sourcePlatforms,
   tags,
 }: PromptEditorProps) {
   const router = useRouter();
@@ -139,6 +147,9 @@ export function PromptEditor({
     initialValue?.verifiedTools ?? [],
   );
   const [sourceUrl, setSourceUrl] = useState(initialValue?.sourceUrl ?? "");
+  const [sourcePlatformKey, setSourcePlatformKey] = useState<SourcePlatformKey | null>(
+    initialValue?.sourcePlatformKey ?? null,
+  );
   const [images, setImages] = useState<EditorImage[]>(
     initialValue?.images.map((image) => ({
       alt: image.alt,
@@ -321,6 +332,7 @@ export function PromptEditor({
         isNsfw,
         prompt,
         sourceUrl,
+        sourcePlatformKey,
         tagKeys,
         title,
         verifiedTools,
@@ -470,6 +482,13 @@ export function PromptEditor({
                 disabled={isPublishing}
                 onChange={setContentRelation}
                 value={contentRelation}
+              />
+
+              <SourcePlatformSelector
+                disabled={isPublishing}
+                onChange={setSourcePlatformKey}
+                platforms={sourcePlatforms}
+                value={sourcePlatformKey}
               />
 
               <VerifiedToolsSelector

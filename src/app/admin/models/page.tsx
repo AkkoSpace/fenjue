@@ -125,6 +125,22 @@ function ModelRow({ item }: { item: AdminAiTool }) {
               placeholder="https://…/logo.svg"
               type="url"
             />
+            <p className="text-xs leading-5 text-muted-foreground">
+              建议使用官方或已上传到 R2 的 SVG/PNG；留空时使用内置品牌图标。
+            </p>
+          </div>
+          <div className={fieldClass}>
+            <label className={labelClass} htmlFor={`model-color-${item.key}`}>
+              品牌色
+            </label>
+            <Input
+              defaultValue={item.brandColor ?? ""}
+              id={`model-color-${item.key}`}
+              maxLength={7}
+              name="brandColor"
+              pattern="#[0-9A-Fa-f]{6}"
+              placeholder="#4285F4"
+            />
           </div>
           <div className={fieldClass}>
             <label className={labelClass} htmlFor={`model-site-${item.key}`}>
@@ -313,6 +329,21 @@ async function ModelsContent({ searchParams }: ModelsPageProps) {
               name="logoUrl"
               placeholder="https://…/logo.svg"
               type="url"
+            />
+            <p className="text-xs leading-5 text-muted-foreground">
+              推荐将 LobeHub Icons 或官方素材上传到 R2 后填写，避免依赖外部 CDN。
+            </p>
+          </div>
+          <div className={fieldClass}>
+            <label className={labelClass} htmlFor="new-model-color">
+              品牌色
+            </label>
+            <Input
+              id="new-model-color"
+              maxLength={7}
+              name="brandColor"
+              pattern="#[0-9A-Fa-f]{6}"
+              placeholder="#4285F4"
             />
           </div>
           <div className={fieldClass}>

@@ -13,6 +13,10 @@ import {
   type ContentRelation,
 } from "@/lib/content/relation";
 import {
+  isSourcePlatformKey,
+  type SourcePlatformKey,
+} from "@/lib/content/source-platforms";
+import {
   isTaxonomyKey,
   MAX_PROMPT_TAGS,
   normalizeTaxonomyKeys,
@@ -45,6 +49,7 @@ export interface PublishPromptInput {
   isNsfw: boolean;
   prompt: string;
   sourceUrl: string;
+  sourcePlatformKey: SourcePlatformKey | null;
   tagKeys: string[];
   title: string;
   verifiedTools: AiToolKey[];
@@ -99,6 +104,13 @@ function invalidInput(
 
   if (!validHttpUrl(input.sourceUrl)) {
     return "请输入有效的来源链接（需要以 http:// 或 https:// 开头）。";
+  }
+
+  if (
+    input.sourcePlatformKey !== null &&
+    !isSourcePlatformKey(input.sourcePlatformKey)
+  ) {
+    return "来源平台信息无效，请重新选择。";
   }
 
   if (!isContentRelation(input.contentRelation)) {
@@ -229,6 +241,9 @@ export async function publishPrompt(
     isNsfw: rawInput?.isNsfw === true,
     prompt: clean(rawInput?.prompt),
     sourceUrl: clean(rawInput?.sourceUrl),
+    sourcePlatformKey: rawInput?.sourcePlatformKey == null
+      ? null
+      : clean(rawInput?.sourcePlatformKey),
     tagKeys: Array.isArray(rawInput?.tagKeys) ? rawInput.tagKeys : [],
     title: clean(rawInput?.title),
     verifiedTools: Array.isArray(rawInput?.verifiedTools)
@@ -260,6 +275,7 @@ export async function publishPrompt(
       p_prompt: input.prompt,
       p_slug: slug,
       p_source_url: input.sourceUrl,
+      p_source_platform_key: input.sourcePlatformKey,
       p_tag_keys: normalizeTaxonomyKeys(input.tagKeys),
       p_title: input.title,
       p_tool_keys: normalizeAiToolKeys(input.verifiedTools),
@@ -328,6 +344,9 @@ export async function updateOwnPrompt(
     isNsfw: rawInput?.isNsfw === true,
     prompt: clean(rawInput?.prompt),
     sourceUrl: clean(rawInput?.sourceUrl),
+    sourcePlatformKey: rawInput?.sourcePlatformKey == null
+      ? null
+      : clean(rawInput?.sourcePlatformKey),
     tagKeys: Array.isArray(rawInput?.tagKeys) ? rawInput.tagKeys : [],
     title: clean(rawInput?.title),
     verifiedTools: Array.isArray(rawInput?.verifiedTools)
@@ -359,6 +378,7 @@ export async function updateOwnPrompt(
     p_is_nsfw: input.isNsfw,
     p_prompt: input.prompt,
     p_source_url: input.sourceUrl,
+    p_source_platform_key: input.sourcePlatformKey,
     p_tag_keys: normalizeTaxonomyKeys(input.tagKeys),
     p_title: input.title,
     p_tool_keys: normalizeAiToolKeys(input.verifiedTools),

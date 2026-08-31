@@ -4,15 +4,15 @@ import { createClient as createPublicClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 
 import {
-  aiToolFromRow,
-  sortAiTools,
-  type AiTool,
-  type AiToolRow,
-} from "@/lib/content/ai-tools";
+  sortSourcePlatforms,
+  sourcePlatformFromRow,
+  type SourcePlatform,
+  type SourcePlatformRow,
+} from "@/lib/content/source-platforms";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
-const AI_TOOL_SELECT =
-  "key,name,description,logo_url,brand_color,website_url,active,sort_order";
+const SOURCE_PLATFORM_SELECT =
+  "key,name,logo_url,brand_color,website_url,active,sort_order";
 
 function publicClient() {
   const { publishableKey, url } = getSupabasePublicConfig();
@@ -25,22 +25,24 @@ function publicClient() {
   });
 }
 
-export async function getActiveAiTools(): Promise<AiTool[]> {
+export async function getActiveSourcePlatforms(): Promise<SourcePlatform[]> {
   "use cache";
   cacheLife("hours");
-  cacheTag("ai-tools");
+  cacheTag("source-platforms");
 
   const { data, error } = await publicClient()
-    .from("ai_tools")
-    .select(AI_TOOL_SELECT)
+    .from("source_platforms")
+    .select(SOURCE_PLATFORM_SELECT)
     .eq("active", true)
     .order("sort_order")
     .order("name");
 
   if (error) {
-    console.error("Unable to load active AI tools", error.code);
-    throw new Error("Unable to load active AI tools");
+    console.error("Unable to load active source platforms", error.code);
+    throw new Error("Unable to load active source platforms");
   }
 
-  return sortAiTools(((data ?? []) as AiToolRow[]).map(aiToolFromRow));
+  return sortSourcePlatforms(
+    ((data ?? []) as SourcePlatformRow[]).map(sourcePlatformFromRow),
+  );
 }

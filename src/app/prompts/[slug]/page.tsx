@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
 import { AiToolMark } from "@/components/ai-tool-mark";
+import { SourcePlatformMark } from "@/components/source-platform-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { PromptCopyButton } from "@/components/prompt-copy-button";
 import { PromptComments } from "@/components/prompt-comments";
@@ -255,7 +256,7 @@ export default async function PromptPage({ params }: PromptPageProps) {
                   {contentRelation.label}
                 </span>
               </p>
-              <div className="mb-3 border-y border-border/70 py-3">
+                <div className="mb-3 border-y border-border/70 py-3">
                 <p className="text-xs text-muted-foreground">分类与标签</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <Link
@@ -274,8 +275,23 @@ export default async function PromptPage({ params }: PromptPageProps) {
                     </Link>
                   ))}
                 </div>
-              </div>
-              {entry.verifiedTools.length ? (
+                </div>
+                {entry.sourcePlatform ? (
+                  <div className="mb-3 border-b border-border/70 pb-3">
+                    <p className="text-xs text-muted-foreground">来源平台</p>
+                    <a
+                      className="mt-2 inline-flex min-h-9 items-center gap-2 border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+                      href={entry.sourcePlatform.websiteUrl ?? entry.sourceUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      <SourcePlatformMark className="size-5 border-0" platform={entry.sourcePlatform} />
+                      {entry.sourcePlatform.name}
+                      <ExternalLink aria-hidden="true" className="size-3.5" />
+                    </a>
+                  </div>
+                ) : null}
+                {entry.verifiedTools.length ? (
                 <div className="mb-3 border-b border-border/70 pb-3">
                   <p className="text-xs text-muted-foreground">已验证工具</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
