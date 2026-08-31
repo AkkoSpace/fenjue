@@ -55,7 +55,9 @@ export function BrandMark({
     ? brandColor
     : undefined;
   const defaultLogoUrl = brandKey ? DEFAULT_BRAND_ASSET_URLS[brandKey] : undefined;
-  const resolvedLogoUrl = logoUrl ?? defaultLogoUrl;
+  // Treat an empty admin value like an unset value so the official default is
+  // still used until a real custom asset is configured.
+  const resolvedLogoUrl = logoUrl?.trim() || defaultLogoUrl;
   const hasLogo = Boolean(resolvedLogoUrl) && !failed;
   const hasFallbackIcon = hasBrandIcon(brandKey, name);
   const usesColorFallback = !hasLogo && !hasFallbackIcon && color;
